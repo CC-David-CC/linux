@@ -2,10 +2,13 @@ import argparse, hashlib, json, os, stat, gzip, subprocess
 from pathlib import Path
 project=Path(__file__).resolve().parent.parent
 guest=project.parent.parent/'downloads/desktop-v86-source/debian-root'
+if not guest.is_dir():guest=project.parent.parent.parent/'downloads/desktop-v86-source/debian-root'
 parser=argparse.ArgumentParser(description='Build a separate CDMUX/2 guest with nano; never overwrite a live image.')
+parser.add_argument('--guest-root',type=Path,default=guest,help='Prepared i386 Debian build root')
+parser.add_argument('--python-uv',type=Path,help='Pinned static i686 uv binary; include Python and uv')
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--work-dir',type=Path,required=True)
-args=parser.parse_args();root=args.work_dir.absolute();out=args.output.absolute()
+args=parser.parse_args();guest=args.guest_root.absolute();root=args.work_dir.absolute();out=args.output.absolute()
 for p in [root,out]:
     if p.exists() or p.is_symlink() or not p.is_relative_to(project/'.build') or any(a.is_symlink() for a in p.parents):raise ValueError('Choose new real paths under active-system/.build')
 root.mkdir(parents=True);out.parent.mkdir(parents=True,exist_ok=True)
@@ -69,10 +72,32 @@ for name in ('xterm-256color','xterm','vt100'):
     source=guest/'usr/lib/terminfo'/name[0]/name
     target=root/'usr/share/terminfo'/name[0]/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,target)
 (root/'etc/nanorc').write_text('set tabsize 4\n')
+# Optional i386 CPython and matching Debian libraries. This extends the existing
+# BusyBox guest; it does not turn the initramfs into a Debian installation.
+if args.python_uv:
+    uv=args.python_uv.resolve()
+    if hashlib.sha256(uv.read_bytes()).hexdigest() != '55ce1c6f70117424da38e3da6ca3f01adf8c14b080dd7337d1a9e6712b456fa5':
+        raise ValueError('Unexpected uv binary; supply the reviewed 0.13.6 i686 build')
+    shutil.copyfile(guest/'usr/bin/python3.11',root/'usr/bin/python3.11')
+    (root/'usr/bin/python3.11').chmod(0o755)
+    (root/'usr/bin/python3').symlink_to('python3.11')
+    (root/'usr/lib').mkdir(exist_ok=True)
+    shutil.copytree(guest/'usr/lib/python3.11',root/'usr/lib/python3.11',symlinks=True,ignore=shutil.ignore_patterns('__pycache__','*.pyc','test','tests'))
+    for lib in ('libbz2.so.1.0','libcrypt.so.1','libcrypto.so.3','libdb-5.3.so','libexpat.so.1','libffi.so.8','libgssapi_krb5.so.2','libk5crypto.so.3','libkeyutils.so.1','libkrb5.so.3','libkrb5support.so.0','liblzma.so.5','libm.so.6','libnsl.so.2','libpanelw.so.6','libreadline.so.8','libsqlite3.so.0','libssl.so.3','libtirpc.so.3','libuuid.so.1','libz.so.1','libcom_err.so.2'):
+        shutil.copyfile(guest/'usr/lib/i386-linux-gnu'/lib,root/'lib'/lib)
+    shutil.copyfile(uv,root/'usr/bin/uv');(root/'usr/bin/uv').chmod(0o755)
+
 licenses=root/'licenses';licenses.mkdir()
 for package in ('nano','libc6','libncursesw6','libtinfo6','ncurses-base'):
     source=guest/'usr/share/doc'/package/'copyright'
     shutil.copyfile(source,licenses/(package+'.copyright'))
+if args.python_uv:
+    # Preserve upstream and Debian distribution notices alongside the image.
+    for package in ('python3.11','python3.11-minimal','libpython3.11-stdlib','libpython3.11-minimal','libssl3','libsqlite3-0','libbz2-1.0','libffi8','liblzma5','libreadline8','zlib1g','libexpat1','libgssapi-krb5-2','libkrb5-3','libnsl2','libtirpc3','libuuid1','libcrypt1','libdb5.3'):
+        source=guest/'usr/share/doc'/package/'copyright'
+        if source.is_file():shutil.copyfile(source,licenses/(package+'.copyright'))
+    for name in ('uv-MIT.txt','uv-APACHE.txt'):
+        shutil.copyfile(project/'scripts/notices'/name,licenses/name)
 for name in ('GPL-2','GPL-3','LGPL-2.1'):
     shutil.copyfile(guest/'usr/share/common-licenses'/name,licenses/name)
 versions=subprocess.check_output(['sudo','-n','chroot',str(guest),'/usr/bin/dpkg-query','-W','-f=${Package} ${Version} ${Architecture}\n','nano','libc6','libncursesw6','libtinfo6','ncurses-base'],text=True)
@@ -105,4 +130,4 @@ with out.open('wb') as raw:
     namepad=(-(110+len(nameb)))%4
     if namepad:f.write(b'\0'*namepad)
 
-print(json.dumps({'status':'PASS','output':str(out),'protocol':'CDMUX/2','bytes':out.stat().st_size,'sha256':hashlib.sha256(out.read_bytes()).hexdigest(),'nanoIncluded':True,'legacyImageChanged':False},indent=2))
+print(json.dumps({'status':'PASS','output':str(out),'protocol':'CDMUX/2','bytes':out.stat().st_size,'sha256':hashlib.sha256(out.read_bytes()).hexdigest(),'nanoIncluded':True,'pythonUvIncluded':bool(args.python_uv),'legacyImageChanged':False},indent=2))
