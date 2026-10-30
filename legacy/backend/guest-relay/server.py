@@ -11,13 +11,13 @@ from aiohttp import web,WSMsgType,ClientSession,ClientTimeout,ClientError
 ROOT=Path(__file__).resolve().parent.parent
 RELAY_REVISION=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 sys.path.insert(0,str(ROOT))
-from serve import PUBLIC,NETWORK,RUNTIME
+from serve import PUBLIC,NETWORK,RUNTIME,STORAGE
 from origin_service.mount import validate_base_path
 
 def public_path(raw):
     parts=raw.split('/')
     if any(x in ('','.','..') for x in parts) or '\\' in raw or '\x00' in raw:raise web.HTTPNotFound()
-    allowed=raw in PUBLIC or len(parts)>1 and parts[0]=='assets' or len(parts)==2 and parts[0]=='network' and parts[1] in NETWORK or len(parts)==3 and parts[:2]==['.build','v86'] and parts[2] in RUNTIME
+    allowed=raw in PUBLIC or raw in STORAGE or len(parts)>1 and parts[0]=='assets' or len(parts)==2 and parts[0]=='network' and parts[1] in NETWORK or len(parts)==3 and parts[:2]==['.build','v86'] and parts[2] in RUNTIME
     if not allowed:raise web.HTTPNotFound()
     target=ROOT
     for p in parts:
