@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Guest Worker transport test</title>
+<script type="module">
+import {GuestWorkerClient} from '/assets/desktop/guest-worker-client.mjs';
+window.ready=false;window.fatal=null;window.shell='';const vm=window.vm=new GuestWorkerClient('/assets/desktop/guest-worker-runtime.js',{onFatal:e=>fatal=e.message});let line='';const decoder=new TextDecoder();
+vm.add_listener('serial0-output-byte',byte=>{const ch=String.fromCharCode(byte);line+=ch;if(ch!=='\n')return;const s=line.replace(/\r?\n$/,'');line='';if(s==='\x1eCDMUX R 2'){ready=true;vm.serial0_send('\x1eCDMUX O 2 80 24\n');}else{const m=/^\x1eCDMUX D 2 ([0-9a-f]*)$/.exec(s);if(m){const bytes=Uint8Array.from(m[1].match(/../g)||[],v=>parseInt(v,16));shell+=decoder.decode(bytes,{stream:true}).replace(/\r/g,'');vm.serial0_send('\x1eCDMUX A 2 '+bytes.length+'\n');}}});
+vm.add_listener('download-error',e=>fatal='download '+e.file_name);
+const image=await(await fetch('/assets/terminal/v2/image.json')).json();vm.start({wasm_path:'/.build/v86/v86.wasm',memory_size:256*1024*1024,bios:{url:'/.build/v86/seabios.bin'},vga_bios:{url:'/.build/v86/vgabios.bin'},bzimage:{url:'/.build/v86/vmlinuz'},initrd:{url:'/'+image.path},filesystem:{},cmdline:'console=ttyS0,115200n8 rdinit=/init panic=-1 quiet loglevel=0',autostart:true,disable_keyboard:true,disable_mouse:true,disable_speaker:true});
+window.command=text=>vm.serial0_send('\x1eCDMUX I 2 '+[...new TextEncoder().encode(text)].map(b=>b.toString(16).padStart(2,'0')).join('')+'\n');
+</script>
