@@ -1,7 +1,7 @@
 // Exercises the actual client with a test-double Worker; no VM is started.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {GuestWorkerClient} from '../active-system/assets/desktop/guest-worker-client.mjs';
+import {GuestWorkerClient} from '../../assets/desktop/guest-worker-client.mjs';
 
 for (const event of ['error','messageerror','fatal']) for (const terminateFails of [false,true]) test(`${event} reports worker failure${terminateFails?' and termination failure':''}`,async()=>{
  const previous=globalThis.Worker;let worker,terminations=0;const fatals=[];

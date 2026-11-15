@@ -5,5 +5,8 @@
   "type": "module",
   "exports": {
     "./guest-worker-client": "./assets/desktop/guest-worker-client.mjs"
+  },
+  "scripts": {
+    "test:owned-reference": "node --test --test-reporter=tap tests/legacy-owned/guest-worker-fatal-cleanup.test.mjs tests/legacy-owned/session-guest-stop-contract-independent.test.mjs"
   }
 }
