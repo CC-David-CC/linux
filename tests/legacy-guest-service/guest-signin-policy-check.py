@@ -6,7 +6,7 @@ are installed. Real UID/guest traffic and managed rollout remain later gates.
 """
 import hashlib,json,subprocess,sys,unittest,socket,struct
 from pathlib import Path
-ROOT=Path(__file__).resolve().parent.parent;sys.path.insert(0,str(ROOT))
+ROOT=Path(__file__).resolve().parents[2]/'server';sys.path.insert(0,str(ROOT))
 from guest_service.egress import EgressPolicy
 from guest_service.signin_policy import SigninPolicy,parse_policy,VERSION
 from guest_service.frames import permitted
@@ -78,6 +78,4 @@ class PolicyTests(unittest.TestCase):
             self.assertEqual(child.returncode,0,child.stderr)
 
 if __name__=='__main__':
-    suite=unittest.defaultTestLoader.loadTestsFromTestCase(PolicyTests);result=unittest.TextTestRunner(verbosity=2).run(suite)
-    report={'status':'PASS' if result.wasSuccessful() else 'FAIL','scope':__doc__,'tests':result.testsRun,'oldPolicySHA256':EgressPolicy(OWN,DNS).sha256,'registeredOnlyPolicySHA256':SigninPolicy(OWN,DNS).sha256,'hostKernelRulesInstalled':False,'livePolicyChanged':False,'registeredExternalBehaviorPreserved':True,'sourceSHA256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['guest_service/egress.py','guest_service/signin_policy.py','guest_service/frames.py','scripts/guest-signin-policy-check.py']}}
-    file=ROOT/'.build/checks/guest-signin-policy-result.json';file.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2));raise SystemExit(not result.wasSuccessful())
+    unittest.main(verbosity=2)

@@ -11,7 +11,7 @@ import sys
 import tempfile
 import unittest
 
-ROOT=Path(__file__).resolve().parent.parent;sys.path.insert(0,str(ROOT))
+ROOT=Path(__file__).resolve().parents[2]/'server';sys.path.insert(0,str(ROOT))
 from guest_service.usage import Allowance,Permissions,UsageLedger,initialize_permissions,initialize_usage,set_permission
 from guest_service.authorization import NetworkDenied
 A='user:00000000-0000-0000-0000-000000000001';B='user:00000000-0000-0000-0000-000000000002'
@@ -157,6 +157,4 @@ class UsageChecks(unittest.TestCase):
             with self.subTest(changes=changes),self.assertRaises(ValueError):replace(Allowance(),**changes)
 
 if __name__=='__main__':
-    tests=unittest.TextTestRunner(verbosity=1).run(unittest.defaultTestLoader.loadTestsFromTestCase(UsageChecks))
-    result={'status':'PASS' if tests.wasSuccessful() else 'FAIL','tests':tests.testsRun,'failures':len(tests.failures),'errors':len(tests.errors),'scope':__doc__,'sha256':{name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in ['guest_service/usage.py','scripts/guest-usage-check.py']}}
-    (ROOT/'.build/checks/guest-usage-result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2));raise SystemExit(0 if tests.wasSuccessful() else 1)
+    unittest.main(verbosity=2)

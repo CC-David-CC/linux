@@ -9,15 +9,12 @@ from dataclasses import dataclass
 from functools import wraps
 import re
 import secrets
-import sys
 import time
 import threading
-from pathlib import Path
 from urllib.parse import urlsplit
 import uuid
 
-sys.path.insert(0,str(Path(__file__).resolve().parent.parent/'codiserver-server-v0.3.0'))
-from codiauth import jose
+from webos_accounts import jose
 
 CHALLENGE='/api/v1/guest-network/challenge'
 AUTHORIZE='/api/v1/guest-network/authorize'

@@ -16,7 +16,7 @@ import struct
 import time
 from aiohttp import web,WSMsgType
 from .authorization import NetworkDenied,WireAuthorization
-from codiauth import jose
+from webos_accounts import jose
 from .frames import permitted
 
 @dataclass(frozen=True)

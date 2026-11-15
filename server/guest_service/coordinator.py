@@ -14,7 +14,7 @@ import time
 from aiohttp import ClientSession,ClientTimeout,UnixConnector,WSMsgType,web,ClientError
 from .authorization import NetworkDenied,context
 from .worker import Budget,Limits
-from codiauth import jose
+from webos_accounts import jose
 
 @dataclass
 class Backend:
