@@ -1,0 +1,7 @@
+# Linux guest source — optional WebOS component
+
+This repository owns the existing Worker guest client/runtime, pinned static base image/kernel, guest init/CDMUX sources, image builders and retained protocol fixture. The18 original files and their actual earlier paths retain exact blobs/modes and filtered history. This source component is meaningful guest/worker/image implementation, not an enabled desktop view.
+
+v86 engine/source/firmware live in the separate engines/v86 repository. The old Desktop's global boot/session orchestration remains preserved in its historical source reference; deliberate optional-view integration and lifecycle separation are pending. Terminal remains its independent apps/terminal source. Linux home is temporary guest memory, separate from server-backed account files. Linux/v86 is never a dependency of the minimum system.
+
+The versioned image was inspected as static build data:974 archive entries, no populated guest/root homes or session/key payload found by the scoped inventory. It is a base image, not a copied live guest volume. Original guest build scripts are preserved references: they require a prepared isolated i386 toolchain and some use sudo/chroot. Do not run them against a live machine or the old workspace; build-interface/toolchain porting remains explicit work. The retained old browser test references its former shared driver and needs a new test harness. No production networking or service activation occurred.
