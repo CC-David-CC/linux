@@ -240,5 +240,171 @@
     "sha256": "feb0f1d555798f68f28719cab437ab1dfb5d918db86ab4554215cbf9d940f63b",
     "member": "uv-0.13.6.data/scripts/uv",
     "binarySha256": "55ce1c6f70117424da38e3da6ca3f01adf8c14b080dd7337d1a9e6712b456fa5"
+  },
+  "debianBuildPackages": [
+    {
+      "name": "base-files",
+      "version": "12.4+deb12u15",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/base-files/base-files_12.4+deb12u15_i386.deb",
+      "sha256": "95ab24c65cd128e5773bfa3d41b489dd5158f9081e6b757ac854d3820d721456"
+    },
+    {
+      "name": "binutils",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/binutils_2.40-2_i386.deb",
+      "sha256": "e3c5873ab8beeec0862718eda956889201ee6d3aea79726ae9009c15a9a582dc"
+    },
+    {
+      "name": "binutils-common",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/binutils-common_2.40-2_i386.deb",
+      "sha256": "82358d6191e7d7e3d085cc34b83857d5c6bacb61b5279934e43b187be285d08e"
+    },
+    {
+      "name": "binutils-i686-linux-gnu",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/binutils-i686-linux-gnu_2.40-2_i386.deb",
+      "sha256": "c7dd751c6182980c76a02f8b3ac7154efc1ae967caf1d75cb4ab6b5f7b706b75"
+    },
+    {
+      "name": "cpp-12",
+      "version": "12.2.0-14+deb12u1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gcc-12/cpp-12_12.2.0-14+deb12u1_i386.deb",
+      "sha256": "6b05ff1120a03ded869e6ac0f7bab01b0dacd9c096c5ea361b53d55155cd4982"
+    },
+    {
+      "name": "gcc-12",
+      "version": "12.2.0-14+deb12u1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gcc-12/gcc-12_12.2.0-14+deb12u1_i386.deb",
+      "sha256": "3a2212282f6f03ae421afb6e95184c0d913726fa32846bdf1a6e3dfea3a36344"
+    },
+    {
+      "name": "libbinutils",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/libbinutils_2.40-2_i386.deb",
+      "sha256": "ea7115ac86e92b352f15dd6882309aa957b7cf516f088aba3a8887a3c2892fa5"
+    },
+    {
+      "name": "libc6-dev",
+      "version": "2.36-9+deb12u14",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/glibc/libc6-dev_2.36-9+deb12u14_i386.deb",
+      "sha256": "c02c0adacabf53b8f34364940c7c4fe5aedaf921765e915742cc31ffc7a9d1ad"
+    },
+    {
+      "name": "libcc1-0",
+      "version": "12.2.0-14+deb12u1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gcc-12/libcc1-0_12.2.0-14+deb12u1_i386.deb",
+      "sha256": "6e699678ff5ff616f8bba154952a7b01ee8da138ef8fa5458bbc9fd4b990b547"
+    },
+    {
+      "name": "libctf-nobfd0",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/libctf-nobfd0_2.40-2_i386.deb",
+      "sha256": "3caccc9a509d5ace7a4ac21bae951153b7aec4ab1d9703f2574f5e51e5eff43c"
+    },
+    {
+      "name": "libctf0",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/libctf0_2.40-2_i386.deb",
+      "sha256": "a89e82ca9c1153c579575bdac9bbd04e483957c9ac48bc02b9c6f1a6f82fce81"
+    },
+    {
+      "name": "libgcc-12-dev",
+      "version": "12.2.0-14+deb12u1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gcc-12/libgcc-12-dev_12.2.0-14+deb12u1_i386.deb",
+      "sha256": "d25bdc547dc760f2c48aa808dcd0c4f3b5bd124daa3b47186ee6070ea57d85f1"
+    },
+    {
+      "name": "libgcc-s1",
+      "version": "12.2.0-14+deb12u1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gcc-12/libgcc-s1_12.2.0-14+deb12u1_i386.deb",
+      "sha256": "56b95a550b342418f6c4765d5c9b08df2c7167134767e44f1f1bc82ced363ece"
+    },
+    {
+      "name": "libgmp10",
+      "version": "2:6.2.1+dfsg1-1.1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gmp/libgmp10_6.2.1+dfsg1-1.1_i386.deb",
+      "sha256": "996d31008cebdda7acb16431b70b8c2021fd0da544ec643597b172b6a7707e48"
+    },
+    {
+      "name": "libgprofng0",
+      "version": "2.40-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/binutils/libgprofng0_2.40-2_i386.deb",
+      "sha256": "35c1bd4d966d14b90770631bc5c9d9f636224e18b78fd58f6f888512ea055197"
+    },
+    {
+      "name": "libisl23",
+      "version": "0.25-1.1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/i/isl/libisl23_0.25-1.1_i386.deb",
+      "sha256": "0222c65b298e7660dd8bac1f2ea60083966ad2bd87b30eb098adc21b83b13cd8"
+    },
+    {
+      "name": "libjansson4",
+      "version": "2.14-2",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/j/jansson/libjansson4_2.14-2_i386.deb",
+      "sha256": "0b7bfa164f9fade858393944ce93a9b9ddd1dad51bbb87068735440e211c0991"
+    },
+    {
+      "name": "libmpc3",
+      "version": "1.3.1-1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/m/mpclib3/libmpc3_1.3.1-1_i386.deb",
+      "sha256": "58a18ad7d49fbf982a4c69d5dc5ff5f8f94120d6fbd88085658ac11d3e466faa"
+    },
+    {
+      "name": "libmpfr6",
+      "version": "4.2.0-1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/m/mpfr4/libmpfr6_4.2.0-1_i386.deb",
+      "sha256": "6fe6a6a9c1e8cc2e54aa4651e7957257b362ce9faa9ba4592b35a54270f277be"
+    },
+    {
+      "name": "libstdc++6",
+      "version": "12.2.0-14+deb12u1",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/gcc-12/libstdc++6_12.2.0-14+deb12u1_i386.deb",
+      "sha256": "a262f9ad4e4b4adcb6a2663051e36e6c117159b048ae7ce8d4af215e90de3e5e"
+    },
+    {
+      "name": "libzstd1",
+      "version": "1.5.4+dfsg2-5",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/libz/libzstd/libzstd1_1.5.4+dfsg2-5_i386.deb",
+      "sha256": "b9009648837c1fa095ca3b79eec3e6358df3946dd0a70c0f66ec3558695af8d5"
+    },
+    {
+      "name": "linux-libc-dev",
+      "version": "6.1.190-1",
+      "url": "https://snapshot.debian.org/archive/debian-security/20261030T123000Z/pool/updates/main/l/linux/linux-libc-dev_6.1.190-1_i386.deb",
+      "sha256": "8e6a9d630557488efda595f606df7d8a995e0b6fc30642df2003effd840aa245"
+    },
+    {
+      "name": "python3.11",
+      "version": "3.11.2-6+deb12u9",
+      "url": "https://snapshot.debian.org/file/d777b03adf8512c18ffb6154d68314e3aa1ca1de",
+      "sha256": "d3eeec0d2ef9f790152991c0e21d27c342af69f58b75e7f7e77127087c58c99f"
+    }
+  ],
+  "v86Source": {
+    "url": "https://github.com/copy/v86.git",
+    "commit": "cc37f35c43bf14865d74ad76879ecf9410f69eb1",
+    "files": {
+      "bios/seabios.bin": {
+        "sha256": "73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98",
+        "bytes": 131072
+      },
+      "bios/vgabios.bin": {
+        "sha256": "a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880",
+        "bytes": 36352
+      },
+      "bios/COPYING.LESSER": {
+        "sha256": "a853c2ffec17057872340eee242ae4d96cbf2b520ae27d903e1b2fef1a5f9d1c",
+        "bytes": 7639
+      },
+      "LICENSE": {
+        "sha256": "3f61ba65e3215b09ef264ba8d777d73c19644309fbb705967634eb5147e500a0",
+        "bytes": 1306
+      }
+    }
+  },
+  "v86Npm": {
+    "url": "https://registry.npmjs.org/v86/-/v86-0.5.472.tgz",
+    "sha256": "4698fae3f518ad0a6f78d31e8f6f8802ff272a86f07b603b95f6c9fdd428e4fc"
   }
 }

@@ -14,10 +14,14 @@ The separately extracted guest backend is now organized under `server/guest_serv
 
 Use the verified v86 package and firmware and prepare an isolated Debian
 bookworm i386 build root. [Guest runtime inputs](scripts/guest-runtime-inputs.json)
-lists public package locations and SHA-256 values for the Debian payload and the
-optional i686 uv release. The listed packages match the 612 Debian runtime files
-in the archived guest image. The guest build root also needs its native GCC,
-binutils, Debian package metadata and the kernel module dependency index.
+lists public download locations and SHA-256 values for the runtime packages,
+GCC, binutils, v86, firmware and optional i686 uv release. The listed runtime
+packages match the 612 Debian runtime files in the archived image.
+
+The input directory contains a usr-merged Debian installation under
+`debian-root/`, the extracted npm tarball under `npm/package/`, and a checkout
+of the listed firmware source under `v86-<commit>/`. The Debian root needs its
+package database and a module dependency index for the pinned kernel.
 
 With the input layout expected by the preparation script, run:
 
