@@ -1,11 +1,24 @@
 #!/bin/bash
-# Prepare the ignored browser runtime from the already retained local cache.
+# Prepare the ignored browser runtime from verified local inputs.
 set -euo pipefail
-project="$(cd "$(dirname "$0")/.." && pwd)"
-cache="$project/../../downloads/desktop-v86-source"
+if (( $# > 2 )); then
+    echo "Usage: $0 [INPUTS_DIRECTORY [UV_BINARY]]" >&2
+    exit 2
+fi
+project="$(cd "$(dirname "$0")/.." && pwd -P)"
+cache="${1:-$project/../../downloads/desktop-v86-source}"
 v86src="$cache/v86-cc37f35c43bf14865d74ad76879ecf9410f69eb1"
-out="$project/.build/v86"
-mkdir -p "$out"
+build="$project/.build"
+destination="$build/v86"
+if [[ -L "$build" || -e "$destination" || -L "$destination" ]]; then
+    echo "Choose a checkout with a real .build directory and no existing v86 output." >&2
+    exit 1
+fi
+mkdir -p "$build"
+scratch="$(mktemp -d "$build/v86-preparation.XXXXXXXX")"
+trap 'rm -rf -- "$scratch"' EXIT
+out="$scratch/runtime"
+mkdir "$out"
 verify() {
     local expected="$1" file="$2" actual
     actual="$(sha256sum "$file" | cut -d' ' -f1)"
@@ -28,10 +41,19 @@ cp "$v86src/LICENSE" "$out/LICENSE-v86"
 cp "$v86src/bios/COPYING.LESSER" "$out/LICENSE-bios"
 cp "$cache/debian-root/usr/share/doc/busybox/copyright" "$out/LICENSE-busybox"
 cp "$cache/debian-root/usr/share/doc/linux-image-6.1.0-54-686/copyright" "$out/LICENSE-linux"
-python3 "$project/scripts/build-browser-initramfs.py"
+args=(--guest-root "$cache/debian-root" --output "$out/initramfs.cpio.gz" --work-dir "$scratch/guest")
+if [[ $# -eq 2 ]]; then
+    args+=(--python-uv "$2")
+fi
+python3 "$project/scripts/build-browser-initramfs.py" "${args[@]}"
 (
     cd "$out"
     sha256sum libv86.js v86.wasm seabios.bin vgabios.bin vmlinuz initramfs.cpio.gz > MANIFEST.sha256
     sha256sum -c MANIFEST.sha256
 )
-echo "Prepared v86 0.5.472 guest assets in $out (ignored by Git)."
+mv -T --no-clobber "$out" "$destination"
+if [[ -e "$out" ]]; then
+    echo "The v86 output directory was created during preparation." >&2
+    exit 1
+fi
+echo "Prepared v86 0.5.472 guest assets in $destination (ignored by Git)."

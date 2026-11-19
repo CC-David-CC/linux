@@ -1,0 +1,244 @@
+{
+  "schema": "webos-linux-guest-inputs/1",
+  "archivedInitramfsSha256": "e571ca17c12f1b392851b1cc1144aa14abc185c3bac7380d7c24821073e6e389",
+  "debianPackages": [
+    {
+      "name": "busybox",
+      "version": "1:1.35.0-4+deb12u1+b1",
+      "architecture": "i386",
+      "source": "busybox (1:1.35.0-4+deb12u1)",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/busybox/busybox_1.35.0-4+deb12u1+b1_i386.deb",
+      "sha256": "7a21225c45edff3e35f2727689beb5ddb52a40b1b4ee1f64e6d4b374722299a9"
+    },
+    {
+      "name": "libbz2-1.0",
+      "version": "1.0.8-5+b1",
+      "architecture": "i386",
+      "source": "bzip2 (1.0.8-5)",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/b/bzip2/libbz2-1.0_1.0.8-5+b1_i386.deb",
+      "sha256": "275c8f3e8d82f0c58f286e7ec0ca3001380895906be1f1f5b4d929f4469a54a2"
+    },
+    {
+      "name": "libc6",
+      "version": "2.36-9+deb12u14",
+      "architecture": "i386",
+      "source": "glibc",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/g/glibc/libc6_2.36-9+deb12u14_i386.deb",
+      "sha256": "76b12e06be66ec3fc2c1791d7d8cf34c2b828ed210e3913feeeb8edc9688f820"
+    },
+    {
+      "name": "libcom-err2",
+      "version": "1.47.0-2+b2",
+      "architecture": "i386",
+      "source": "e2fsprogs (1.47.0-2)",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/e/e2fsprogs/libcom-err2_1.47.0-2+b2_i386.deb",
+      "sha256": "ccdcdc4211cd85ba9b70f8618c9ba42867254086f0d5c8ef7e257272b1db46a3"
+    },
+    {
+      "name": "libcrypt1",
+      "version": "1:4.4.33-2",
+      "architecture": "i386",
+      "source": "libxcrypt",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/libx/libxcrypt/libcrypt1_4.4.33-2_i386.deb",
+      "sha256": "bbed3f2db1b1e800c7356212b4ede73ebb28f73b87857931dece725601aa67ad"
+    },
+    {
+      "name": "libdb5.3",
+      "version": "5.3.28+dfsg2-1",
+      "architecture": "i386",
+      "source": "db5.3",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/d/db5.3/libdb5.3_5.3.28+dfsg2-1_i386.deb",
+      "sha256": "8ddad41cb683c591e4d5444560bdeb628ceec3d605c66a2a17b8bcceb1cf38b7"
+    },
+    {
+      "name": "libexpat1",
+      "version": "2.5.0-1+deb12u4",
+      "architecture": "i386",
+      "source": "expat",
+      "url": "https://snapshot.debian.org/file/3a536b341ee5bb2202642667f9d669b8678e58a9",
+      "sha256": "3e91954b72929bd8598e7a0db37daf0c9c743f798c440c0b1b3cfc0aa8f1ea5a"
+    },
+    {
+      "name": "libffi8",
+      "version": "3.4.4-1",
+      "architecture": "i386",
+      "source": "libffi",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/libf/libffi/libffi8_3.4.4-1_i386.deb",
+      "sha256": "21b4d7de1cea73aa8d594106e473c1c6b6f33fd11cb66af5db35f9317f5f9a60"
+    },
+    {
+      "name": "libgssapi-krb5-2",
+      "version": "1.20.1-2+deb12u5",
+      "architecture": "i386",
+      "source": "krb5",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/k/krb5/libgssapi-krb5-2_1.20.1-2+deb12u5_i386.deb",
+      "sha256": "40da2c7c127d6b3c17ae8990270e7e5b3fd25e78562e12d5806512f9cf200f52"
+    },
+    {
+      "name": "libk5crypto3",
+      "version": "1.20.1-2+deb12u5",
+      "architecture": "i386",
+      "source": "krb5",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/k/krb5/libk5crypto3_1.20.1-2+deb12u5_i386.deb",
+      "sha256": "2badc281ffa1dc716a701413e01c48ee2b17c73d1e194ee2228b11e6200f4278"
+    },
+    {
+      "name": "libkeyutils1",
+      "version": "1.6.3-2",
+      "architecture": "i386",
+      "source": "keyutils",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/k/keyutils/libkeyutils1_1.6.3-2_i386.deb",
+      "sha256": "124ebf5b8307e2182afaaa166f057144ccc7132e2391164bd86d6c493efc94ef"
+    },
+    {
+      "name": "libkrb5-3",
+      "version": "1.20.1-2+deb12u5",
+      "architecture": "i386",
+      "source": "krb5",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/k/krb5/libkrb5-3_1.20.1-2+deb12u5_i386.deb",
+      "sha256": "1f70267f4e6a623efc785dcd24427692afb499951c058d24db95540003b99468"
+    },
+    {
+      "name": "libkrb5support0",
+      "version": "1.20.1-2+deb12u5",
+      "architecture": "i386",
+      "source": "krb5",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/k/krb5/libkrb5support0_1.20.1-2+deb12u5_i386.deb",
+      "sha256": "8d51bd1c6fa9d3546b28b5c2215eb92cd5fe2085179c37347622b7c5f580ef98"
+    },
+    {
+      "name": "liblzma5",
+      "version": "5.4.1-1+deb12u2",
+      "architecture": "i386",
+      "source": "xz-utils",
+      "url": "https://snapshot.debian.org/archive/debian-security/20261030T123000Z/pool/updates/main/x/xz-utils/liblzma5_5.4.1-1+deb12u2_i386.deb",
+      "sha256": "833ccfd933fa965977c8d1a1b9a92660a231bab5c691628e4aba3c551f640730"
+    },
+    {
+      "name": "libncursesw6",
+      "version": "6.4-4",
+      "architecture": "i386",
+      "source": "ncurses",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/n/ncurses/libncursesw6_6.4-4_i386.deb",
+      "sha256": "9e453156a8a8374f64402ce7e4d4e15c65bf7186534530b39210ff68936aa020"
+    },
+    {
+      "name": "libnsl2",
+      "version": "1.3.0-2",
+      "architecture": "i386",
+      "source": "libnsl",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/libn/libnsl/libnsl2_1.3.0-2_i386.deb",
+      "sha256": "0e4debdf911886156bd41ee47104f35af73a29a2fabbd732412b19edf5de4825"
+    },
+    {
+      "name": "libpython3.11-minimal",
+      "version": "3.11.2-6+deb12u9",
+      "architecture": "i386",
+      "source": "python3.11",
+      "url": "https://snapshot.debian.org/archive/debian-security/20261030T123000Z/pool/updates/main/p/python3.11/libpython3.11-minimal_3.11.2-6+deb12u9_i386.deb",
+      "sha256": "9b99d8cb83606886b540c578da55217522796526aea815eff4a1bdb1c5f31c9c"
+    },
+    {
+      "name": "libpython3.11-stdlib",
+      "version": "3.11.2-6+deb12u9",
+      "architecture": "i386",
+      "source": "python3.11",
+      "url": "https://snapshot.debian.org/archive/debian-security/20261030T123000Z/pool/updates/main/p/python3.11/libpython3.11-stdlib_3.11.2-6+deb12u9_i386.deb",
+      "sha256": "02a955bbf319a22b3041738088ebfe6f674d07791419126570757e31cbaec233"
+    },
+    {
+      "name": "libreadline8",
+      "version": "8.2-1.3",
+      "architecture": "i386",
+      "source": "readline",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/r/readline/libreadline8_8.2-1.3_i386.deb",
+      "sha256": "2350f3fb02ac8f3ccc827146bfdfd2390fce544c351d679f25adbe17906b49e2"
+    },
+    {
+      "name": "libsqlite3-0",
+      "version": "3.40.1-2+deb12u2",
+      "architecture": "i386",
+      "source": "sqlite3",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/s/sqlite3/libsqlite3-0_3.40.1-2+deb12u2_i386.deb",
+      "sha256": "8b96faa7a4a16a24576dd034a10e0cb46258e96449e96fd577e52afd9c79b92c"
+    },
+    {
+      "name": "libssl3",
+      "version": "3.0.22-1~deb12u1",
+      "architecture": "i386",
+      "source": "openssl",
+      "url": "https://snapshot.debian.org/file/3d32c44dc9fa86823374f1727b6d9705e6111fc6",
+      "sha256": "de199ad1423e0f72522a0b23f6979dc025a84b2653c15bbebfd4333d0e49bfec"
+    },
+    {
+      "name": "libtinfo6",
+      "version": "6.4-4",
+      "architecture": "i386",
+      "source": "ncurses",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/n/ncurses/libtinfo6_6.4-4_i386.deb",
+      "sha256": "d6de1d8daeadda8ba57f86d42273919fba9e57f699036b7c51062d91778f4a16"
+    },
+    {
+      "name": "libtirpc3",
+      "version": "1.3.3+ds-1",
+      "architecture": "i386",
+      "source": "libtirpc",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/libt/libtirpc/libtirpc3_1.3.3+ds-1_i386.deb",
+      "sha256": "42d387e48a464c2ee90c34598f3159c44f48b6e885c7bd3f57e65c607619887a"
+    },
+    {
+      "name": "libuuid1",
+      "version": "2.38.1-5+deb12u3",
+      "architecture": "i386",
+      "source": "util-linux",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/u/util-linux/libuuid1_2.38.1-5+deb12u3_i386.deb",
+      "sha256": "eb665b48c1a021ee029ce72400623eba45cac853e832f908d72fb48fa428a228"
+    },
+    {
+      "name": "linux-image-6.1.0-54-686",
+      "version": "6.1.190-1",
+      "architecture": "i386",
+      "source": "linux-signed-i386 (6.1.190+1)",
+      "url": "https://snapshot.debian.org/archive/debian-security/20261030T123000Z/pool/updates/main/l/linux-signed-i386/linux-image-6.1.0-54-686_6.1.190-1_i386.deb",
+      "sha256": "877192a4e29902b1627308c54efb1805ff2a1ae8c445a1c813d903f1b9545531"
+    },
+    {
+      "name": "nano",
+      "version": "7.2-1+deb12u1",
+      "architecture": "i386",
+      "source": "nano",
+      "url": "https://snapshot.debian.org/file/7af2b88f343d55a2d13ef2667c6ccc9d5be022e0",
+      "sha256": "3adb7ae2beaa8db67e09173e4e06795a8b8e3ba0ff0485e943e10158bf10fdc5"
+    },
+    {
+      "name": "ncurses-base",
+      "version": "6.4-4",
+      "architecture": "all",
+      "source": "ncurses",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/n/ncurses/ncurses-base_6.4-4_all.deb",
+      "sha256": "bfd1d89f833c09a28b062ee916495cf69649ca2bf529532476c7b69d75d24909"
+    },
+    {
+      "name": "python3.11-minimal",
+      "version": "3.11.2-6+deb12u9",
+      "architecture": "i386",
+      "source": "python3.11",
+      "url": "https://snapshot.debian.org/archive/debian-security/20261030T123000Z/pool/updates/main/p/python3.11/python3.11-minimal_3.11.2-6+deb12u9_i386.deb",
+      "sha256": "a447cb560dfea8d1e53df3ebe719af12e9baa9837cbe375fbea0969824957109"
+    },
+    {
+      "name": "zlib1g",
+      "version": "1:1.2.13.dfsg-1",
+      "architecture": "i386",
+      "source": "zlib",
+      "url": "https://snapshot.debian.org/archive/debian/20261030T123000Z/pool/main/z/zlib/zlib1g_1.2.13.dfsg-1_i386.deb",
+      "sha256": "3ca84a1245347652b7e1f8694db222851f7f1e7060515b21e1439b0cf84f96e1"
+    }
+  ],
+  "uv": {
+    "url": "https://files.pythonhosted.org/packages/28/51/4fecb1d7a32ebf5c444643a4da9d1ae0878de0c71284792dbcdaaf61a5b8/uv-0.13.6-py3-none-musllinux_1_1_i686.whl",
+    "sha256": "feb0f1d555798f68f28719cab437ab1dfb5d918db86ab4554215cbf9d940f63b",
+    "member": "uv-0.13.6.data/scripts/uv",
+    "binarySha256": "55ce1c6f70117424da38e3da6ca3f01adf8c14b080dd7337d1a9e6712b456fa5"
+  }
+}
