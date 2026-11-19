@@ -70,7 +70,10 @@ static void command(char *line) {
         unsigned cols,rows;char extra;
         if(sscanf(end," %u %u %c",&cols,&rows,&extra)!=2||cols<20||cols>320||rows<4||rows>120)return;
         if(!s&&empty){open_session(empty,(unsigned)id,cols,rows);if(!empty->id)frame('E',(unsigned)id,(unsigned char *)"Could not open guest PTY",23);}
-        else if(!s)frame('E',(unsigned)id,(unsigned char *)"Terminal limit reached",22);return;
+        else if(!s) {
+            frame('E',(unsigned)id,(unsigned char *)"Terminal limit reached",22);
+        }
+        return;
     }
     if(!s)return;
     if(kind=='C'&&!*end){close_session(s);return;}
