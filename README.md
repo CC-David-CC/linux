@@ -26,8 +26,11 @@ bash scripts/prepare-v86-assets.sh /path/to/prepared/inputs /path/to/i686/uv
 ```
 
 The optional second argument includes Python and uv. The command verifies its
-input checksums and prepares a new ignored `.build/v86/` directory with a file
-manifest. The legacy image builder uses an isolated i386 chroot for its C
-compiler. The preparation command has been checked with the real pinned input
-hashes and a stand-in for that builder. A fresh guest image rebuild and boot
-remain to be verified.
+input checksums and prepares a new ignored `.build/v86/` directory with the
+checksum manifest and an `image.json` entry for the rebuilt guest. The browser
+worker fixture uses that entry.
+
+Build on a Linux host that can run i386 applications and supports rootless
+Bubblewrap namespaces. The builder runs the isolated Debian BusyBox and C
+compiler through Bubblewrap. It uses host `as`, `ld`, `dpkg-query` and Python,
+and reads package metadata and module dependencies from the Debian build root.

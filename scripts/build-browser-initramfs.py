@@ -1,4 +1,4 @@
-import argparse, hashlib, json, os, stat, gzip, subprocess
+import argparse, hashlib, json, os, stat, gzip, subprocess, tempfile
 from pathlib import Path
 project=Path(__file__).resolve().parent.parent
 guest=project.parent.parent/'downloads/desktop-v86-source/debian-root'
@@ -11,7 +11,10 @@ parser.add_argument('--work-dir',type=Path,required=True)
 args=parser.parse_args();guest=args.guest_root.absolute();root=args.work_dir.absolute();out=args.output.absolute()
 for p in [root,out]:
     if p.exists() or p.is_symlink() or not p.is_relative_to(project/'.build') or any(a.is_symlink() for a in p.parents):raise ValueError('Choose new real paths under active-system/.build')
-root.mkdir(parents=True);out.parent.mkdir(parents=True,exist_ok=True)
+root.mkdir(parents=True, mode=0o700)
+out.parent.mkdir(parents=True,exist_ok=True)
+# Keep the staging root private and preserve the guest's archived file modes.
+os.umask(0o002)
 for d in ('bin','dev','proc','sys','tmp','root','lib','etc','sbin','home/guest','usr/bin'):(root/d).mkdir(parents=True, exist_ok=True)
 os.chmod(root/'tmp',0o1777)
 os.chmod(root/'home/guest',0o700)
@@ -19,7 +22,17 @@ import shutil
 shutil.copy2(guest/'bin/busybox',root/'bin/busybox')
 for name in ('ld-linux.so.2','libc.so.6','libresolv.so.2'):
     shutil.copy2(guest/'usr/lib/i386-linux-gnu'/name,root/'lib'/name)
-applets=subprocess.check_output([guest/'bin/busybox','--list'],text=True).splitlines()
+def guest_command(scratch, *command):
+    return [
+        'bwrap', '--unshare-user', '--unshare-net', '--unshare-pid',
+        '--die-with-parent', '--clearenv', '--setenv', 'PATH', '/usr/bin:/bin',
+        '--setenv', 'LC_ALL', 'C', '--ro-bind', str(guest), '/',
+        '--dev', '/dev', '--proc', '/proc', '--bind', str(scratch), '/tmp',
+        '--chdir', '/tmp', '--', *command,
+    ]
+
+with tempfile.TemporaryDirectory(prefix='guest-applet-list-', dir=root) as scratch:
+    applets=subprocess.check_output(guest_command(scratch,'/bin/busybox','--list'),text=True).splitlines()
 for applet in applets:
     link=root/'bin'/applet
     if link.is_symlink() or link.exists(): link.unlink()
@@ -35,16 +48,13 @@ subprocess.run(['ld','-m','elf_i386','-o',str(root/'bin/ping'),str(root/'ping.o'
 subprocess.run(['as','--32','-o',str(root/'drop.o'),str(project/'scripts/guest-drop-privilege.S')],check=True)
 subprocess.run(['ld','-m','elf_i386','-o',str(root/'sbin/drop-to-guest'),str(root/'drop.o')],check=True)
 (root/'drop.o').unlink()
-# Compile with the existing isolated i386 toolchain and matching guest libc.
-# Temporary source/artifacts are removed from the downloaded build root.
-build_dir=Path(subprocess.check_output(['sudo','-n','mktemp','-d',str(guest/'tmp/codi-terminal-XXXXXX')],text=True).strip())
-try:
-    output='/'+str(build_dir.relative_to(guest))+'/terminal-mux'
-    subprocess.run(['sudo','-n','chroot',str(guest),'/usr/bin/gcc','-std=c11','-O2','-Wall','-Wextra','-Werror','-x','c','-o',output,'-'],input=(project/'scripts/guest-terminal-mux.c').read_bytes(),check=True)
-    raw=subprocess.check_output(['sudo','-n','cat',str(build_dir/'terminal-mux')])
-    (root/'sbin/terminal-mux').write_bytes(raw);(root/'sbin/terminal-mux').chmod(0o755)
-finally:
-    subprocess.run(['sudo','-n','rm','-rf','--',str(build_dir)],check=True)
+# Build the C helper in the pinned i386 userspace without changing that root.
+with tempfile.TemporaryDirectory(prefix='guest-terminal-', dir=root) as scratch:
+    command=guest_command(scratch,'/usr/bin/gcc','-std=c11','-O2','-Wall','-Wextra',
+                          '-Werror','-x','c','-o','/tmp/terminal-mux','-')
+    subprocess.run(command,input=(project/'scripts/guest-terminal-mux.c').read_bytes(),check=True)
+    shutil.copy2(Path(scratch)/'terminal-mux',root/'sbin/terminal-mux')
+    (root/'sbin/terminal-mux').chmod(0o755)
 
 # Include the matching kernel's 9p and VirtIO modules in the early filesystem.
 module_root=guest/'lib/modules/6.1.0-54-686'
@@ -100,7 +110,7 @@ if args.python_uv:
         shutil.copyfile(project/'scripts/notices'/name,licenses/name)
 for name in ('GPL-2','GPL-3','LGPL-2.1'):
     shutil.copyfile(guest/'usr/share/common-licenses'/name,licenses/name)
-versions=subprocess.check_output(['sudo','-n','chroot',str(guest),'/usr/bin/dpkg-query','-W','-f=${Package} ${Version} ${Architecture}\n','nano','libc6','libncursesw6','libtinfo6','ncurses-base'],text=True)
+versions=subprocess.check_output(['dpkg-query','--admindir',str(guest/'var/lib/dpkg'),'-W','-f=${Package} ${Version} ${Architecture}\n','nano','libc6','libncursesw6','libtinfo6','ncurses-base'],text=True)
 (licenses/'package-versions.txt').write_text(versions)
 entries=[]
 # Add files and symlinks from tree.

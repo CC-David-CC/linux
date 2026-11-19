@@ -51,6 +51,24 @@ python3 "$project/scripts/build-browser-initramfs.py" "${args[@]}"
     sha256sum libv86.js v86.wasm seabios.bin vgabios.bin vmlinuz initramfs.cpio.gz > MANIFEST.sha256
     sha256sum -c MANIFEST.sha256
 )
+python3 - "$out" <<'PYTHON'
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+output = Path(sys.argv[1])
+image = output / 'initramfs.cpio.gz'
+with image.open('rb') as data:
+    digest = hashlib.file_digest(data, 'sha256').hexdigest()
+manifest = {
+    'version': 'codi-terminal-image/2',
+    'path': '.build/v86/initramfs.cpio.gz',
+    'sha256': digest,
+    'bytes': image.stat().st_size,
+}
+(output / 'image.json').write_text(json.dumps(manifest, indent=2) + '\n')
+PYTHON
 mv -T --no-clobber "$out" "$destination"
 if [[ -e "$out" ]]; then
     echo "The v86 output directory was created during preparation." >&2
