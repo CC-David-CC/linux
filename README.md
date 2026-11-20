@@ -32,7 +32,8 @@ bash scripts/prepare-v86-assets.sh /path/to/prepared/inputs /path/to/i686/uv
 The optional second argument includes Python and uv. The command verifies its
 input checksums and prepares a new ignored `.build/v86/` directory with the
 checksum manifest and an `image.json` entry for the rebuilt guest. The browser
-worker fixture uses that entry.
+worker fixture uses that entry. The script also creates the ignored
+\`assets/terminal/v86\` link to the output so the worker can load its library.
 
 Build on a Linux host that can run i386 applications and supports rootless
 Bubblewrap namespaces. The builder runs the isolated Debian BusyBox and C

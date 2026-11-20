@@ -14,7 +14,15 @@ if [[ -L "$build" || -e "$destination" || -L "$destination" ]]; then
     echo "Choose a checkout with a real .build directory and no existing v86 output." >&2
     exit 1
 fi
-mkdir -p "$build"
+# The production worker and the standalone fixture resolve libv86 at the
+# same URL. Keep the verified rootless build in its original output directory.
+public_parent="$project/assets/terminal"
+public_runtime="$public_parent/v86"
+if [[ -L "$project/assets" || -L "$public_parent" || -e "$public_runtime" || -L "$public_runtime" ]]; then
+    echo "A new assets/terminal/v86 runtime link is required." >&2
+    exit 1
+fi
+mkdir -p "$build" "$public_parent"
 scratch="$(mktemp -d "$build/v86-preparation.XXXXXXXX")"
 trap 'rm -rf -- "$scratch"' EXIT
 out="$scratch/runtime"
@@ -74,4 +82,5 @@ if [[ -e "$out" ]]; then
     echo "The v86 output directory was created during preparation." >&2
     exit 1
 fi
+ln -sT ../../.build/v86 "$public_runtime"
 echo "Prepared v86 0.5.472 guest assets in $destination (ignored by Git)."

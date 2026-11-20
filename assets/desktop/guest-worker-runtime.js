@@ -1,6 +1,6 @@
-/* Worker-owned v86 and guest filesystem. Not yet wired into the desktop. */
+/* Worker-owned v86 and guest filesystem. */
 'use strict';
-importScripts(new URL('../../.build/v86/libv86.js',self.location.href));
+importScripts(new URL('../terminal/v86/libv86.js',self.location.href));
 const MAX_FILE=128*1024*1024,MAX_QUEUE=64,trashOrigins=new Map();
 let vm=null,ready=false,closed=false,queued=0,chain=Promise.resolve(),serial='',serialTimer=null,outgoingFrames=0;
 function path(value){const parts=[];for(const part of String(value).replace(/^\/home\/guest(?=\/|$)/,'').split('/')){if(!part||part==='.')continue;if(part==='..')parts.pop();else{if(part.includes('\0'))throw Error('Invalid filename.');parts.push(part);}}return '/'+parts.join('/');}
