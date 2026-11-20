@@ -45,6 +45,7 @@ subprocess.run(['ld','-m','elf_i386','-o',str(root/'bin/ping'),str(root/'ping.o'
 (root/'bin/ping').chmod(0o4755)
 (root/'etc/passwd').write_text('root:x:0:0:root:/root:/bin/sh\nguest:x:1000:1000:Browser guest:/home/guest:/bin/sh\n')
 (root/'etc/group').write_text('root:x:0:\nguest:x:1000:\n')
+shutil.copyfile(project/'scripts/guest-hosts',root/'etc/hosts')
 subprocess.run(['as','--32','-o',str(root/'drop.o'),str(project/'scripts/guest-drop-privilege.S')],check=True)
 subprocess.run(['ld','-m','elf_i386','-o',str(root/'sbin/drop-to-guest'),str(root/'drop.o')],check=True)
 (root/'drop.o').unlink()

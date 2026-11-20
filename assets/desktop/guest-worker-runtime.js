@@ -2,6 +2,7 @@
 'use strict';
 importScripts(new URL('../terminal/v86/libv86.js',self.location.href));
 const MAX_FILE=128*1024*1024,MAX_QUEUE=64,trashOrigins=new Map();
+const NINE_P_MAX=1024*1024,NINE_P_QUEUE=32;
 let vm=null,ready=false,closed=false,queued=0,chain=Promise.resolve(),serial='',serialTimer=null,outgoingFrames=0;
 function path(value){const parts=[];for(const part of String(value).replace(/^\/home\/guest(?=\/|$)/,'').split('/')){if(!part||part==='.')continue;if(part==='..')parts.pop();else{if(part.includes('\0'))throw Error('Invalid filename.');parts.push(part);}}return '/'+parts.join('/');}
 function fs(){if(!ready||!vm?.fs9p)throw Error('Guest home is still starting.');return vm.fs9p;}
@@ -20,16 +21,39 @@ async function execute(method,args){
  throw Error('Unknown guest operation.');
 }
 function fail(error){postMessage({type:'fatal',message:String(error?.message||error)});}
+function accountFilesystem(port){
+ const pending=new Map();
+ const tag=packet=>packet[5]|(packet[6]<<8);
+ const packetValid=packet=>packet instanceof Uint8Array&&packet.length>=7&&packet.length<=NINE_P_MAX&&
+  new DataView(packet.buffer,packet.byteOffset,packet.byteLength).getUint32(0,true)===packet.length;
+ port.onmessage=({data})=>{
+  if(!packetValid(data)){fail('Invalid account filesystem response.');return;}
+  const id=tag(data),reply=pending.get(id);
+  if(!reply){fail('Account filesystem response has no pending request.');return;}
+  pending.delete(id);
+  reply(data);
+ };
+ port.onmessageerror=()=>fail('Account filesystem message could not be read.');
+ return {handle9p(packet,reply){
+  if(!packetValid(packet)||pending.size>=NINE_P_QUEUE||pending.has(tag(packet))){
+   fail('Invalid or excessive account filesystem requests.');return;
+  }
+  pending.set(tag(packet),reply);
+  port.postMessage(packet,[packet.buffer]);
+ }};
+}
 function flush(){serialTimer=null;if(serial){const text=serial;serial='';postMessage({type:'serial',text});}}
 onmessage=({data})=>{
  if(closed||!data||typeof data!=='object')return;
  if(data.type==='start'){
   if(vm){fail('Guest already started.');return;}
   try{
-   vm=new V86(data.options);vm.bus.register('net0-send',frame=>{if(frame instanceof Uint8Array&&frame.length>=14&&frame.length<=1518&&outgoingFrames<64){outgoingFrames++;postMessage({type:'frame',frame});}},null);
+   const account=data.accountPort instanceof MessagePort;
+   const options=account?{...data.options,filesystem:accountFilesystem(data.accountPort)}:data.options;
+   vm=new V86(options);vm.bus.register('net0-send',frame=>{if(frame instanceof Uint8Array&&frame.length>=14&&frame.length<=1518&&outgoingFrames<64){outgoingFrames++;postMessage({type:'frame',frame});}},null);
    vm.add_listener('serial0-output-byte',byte=>{serial+=String.fromCharCode(byte);if(serial.length>=65536)flush();else if(serialTimer===null)serialTimer=setTimeout(flush,5);});
    vm.add_listener('download-error',event=>postMessage({type:'download-error',event:{file_name:String(event.file_name||'')}}));
-   vm.add_listener('emulator-ready',()=>{try{const root=vm.fs9p.GetInode(0);root.uid=1000;root.gid=1000;root.mode=0o40777;ready=true;postMessage({type:'ready'});}catch(e){fail(e);}});
+   vm.add_listener('emulator-ready',()=>{try{if(!account){const root=vm.fs9p.GetInode(0);root.uid=1000;root.gid=1000;root.mode=0o40777;}ready=true;postMessage({type:'ready'});}catch(e){fail(e);}});
   }catch(e){fail(e);}return;
  }
  if(data.type==='serial'){if(vm&&typeof data.text==='string'&&data.text.length<=65536)vm.serial0_send(data.text);return;}
