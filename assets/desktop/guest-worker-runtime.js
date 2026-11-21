@@ -9,6 +9,8 @@ function fs(){if(!ready||!vm?.fs9p)throw Error('Guest home is still starting.');
 function stat(value){const f=fs(),p=path(value),info=f.SearchPath(p);if(info.id<0)throw Error('File or folder not found: '+p);const node=f.GetInode(info.id);return {...info,path:p,size:node.size,mode:node.mode,dir:f.IsDirectory(info.id)};}
 async function execute(method,args){
  const f=fs();
+ if(method==='pauseGuest')return vm.stop();
+ if(method==='resumeGuest')return vm.run();
  if(method==='stat')return stat(args[0]);
  if(method==='list'){const s=stat(args[0]);if(!s.dir)throw Error('Choose a folder.');return f.GetChildren(s.id).map(name=>({...stat(s.path+'/'+name),name})).sort((a,b)=>Number(b.dir)-Number(a.dir)||a.name.localeCompare(b.name));}
  if(method==='mkdir'){const p=path(args[0]),s=f.SearchPath(p);if(s.id>=0)throw Error('That name already exists.');if(s.parentid<0)throw Error('Parent folder does not exist.');f.CreateDirectory(p.split('/').pop(),s.parentid);return;}
