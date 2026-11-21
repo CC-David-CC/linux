@@ -22,7 +22,7 @@ import tempfile
 import time
 
 from .authorization import WireAuthorization
-from .egress import EgressPolicy
+from .egress import parse_runtime_policy
 from .installation import path,root_file,sha,verify_runtime,settings,units,semantic_kernel
 from .usage import protected,Permissions,initialize_permissions
 
@@ -174,7 +174,7 @@ class Manager:
         if not isinstance(public['authorityKeys'],list) or not 1<=len(public['authorityKeys'])<=4:raise ValueError('Explicit public issuer keys required')
         for entry in public['authorityKeys']:
             if set(entry)!={'kid','jwk'} or set(entry['jwk'])!={'kty','crv','x','y'}:raise ValueError('Only public issuer keys may enter worker settings')
-        policy=EgressPolicy.parse(c['policy'])
+        policy=parse_runtime_policy(c['policy'])
         if policy.sha256!=c['policySHA256']:raise ValueError('Effective guest egress policy changed')
         WireAuthorization(public,policy.sha256,base_path=c['basePath'])
         if type(c['namespaceInode']) is not int or os.stat(c['namespacePath'] or '/proc/self/ns/net').st_ino!=c['namespaceInode']:raise ValueError('Guest target namespace changed')
@@ -209,7 +209,7 @@ class Manager:
             if raw!=encoded(self.worker_settings(c,role)):raise ValueError('Guest worker settings changed')
             settings(self.folder/(role+'.json'),sha(raw));WireAuthorization(c['issuerPolicy'],c['policySHA256'],base_path=c['basePath'])
         if len(set(ids))!=3:raise ValueError('Three separate network role UIDs required')
-        policy=EgressPolicy.parse(c['policy'])
+        policy=parse_runtime_policy(c['policy'])
         if policy.sha256!=c['policySHA256'] or c['issuerPolicy']['issuer']!=c['origin']:raise ValueError('Guest issuer/egress context changed')
         if root_file(self.folder/'resolv.conf')!=(''.join('nameserver '+v+'\n' for v in policy.dns_ipv4)).encode():raise ValueError('Public-only resolver changed')
         if full:
@@ -236,7 +236,7 @@ class Manager:
         for value in self.states(c).values():
             if value['ActiveState'] not in ('inactive','failed') or int(value.get('MainPID','0')):raise ValueError('Guest units must be stopped')
     def rules(self,c):
-        raw=EgressPolicy.parse(c['policy']).nftables(anonymous_uid=c['roles']['anonymous']['uid'],registered_uid=c['roles']['registered']['uid'],frontend_uid=c['frontendUID'],unix_workers=True)
+        raw=parse_runtime_policy(c['policy']).nftables(anonymous_uid=c['roles']['anonymous']['uid'],registered_uid=c['roles']['registered']['uid'],frontend_uid=c['frontendUID'],unix_workers=True)
         owner=sha(encoded({'instance':c['instance'],'configDir':str(self.folder)}))
         # Exclusive create and the complete ruleset are one nft transaction.
         # A competing table appearing after inspection cannot be adopted.
@@ -255,7 +255,7 @@ class Manager:
     def configure(self,*,instance,worker,worker_sha256,python,state_root,frontend_user,anonymous_user,registered_user,issuer_policy,policy,namespace=None,unit_dir='/etc/systemd/system',base_path='',phase=lambda name:None):
         if self.pending.exists():raise ValueError('Recover existing guest journal first')
         if self.config.exists():
-            c=self.load();requested={'instance':instance,'workerRelease':str(worker),'workerSHA256':worker_sha256,'python':str(python),'stateRoot':str(state_root),'frontendUser':frontend_user,'issuerPolicy':json.loads(root_file(issuer_policy)),'policy':EgressPolicy.parse(policy).value(),'namespacePath':namespace,'unitDir':unit_dir,'basePath':base_path}
+            c=self.load();requested={'instance':instance,'workerRelease':str(worker),'workerSHA256':worker_sha256,'python':str(python),'stateRoot':str(state_root),'frontendUser':frontend_user,'issuerPolicy':json.loads(root_file(issuer_policy)),'policy':parse_runtime_policy(policy).value(),'namespacePath':namespace,'unitDir':unit_dir,'basePath':base_path}
             if any(c[key]!=value for key,value in requested.items()) or [c['roles'][role]['user'] for role in ROLES]!=[anonymous_user,registered_user]:raise ValueError('Existing guest configuration differs; explicit migration required')
             return {'status':'already-configured','started':False,'credentialsRegenerated':False}
         if not re.fullmatch(r'codi-net-[a-z0-9][a-z0-9-]{0,35}',instance):raise ValueError('Bounded guest instance required')
@@ -263,7 +263,7 @@ class Manager:
         for root in [self.folder,path(str(state_root)),path(str(worker)),self.operator,Path(python).parent.parent]:
             if any(root.is_relative_to(Path(v)) for v in ['/home','/root','/tmp','/var/tmp','/run']):raise ValueError('Persistent protected guest roots required')
         root_roles={role:{'user':name,'uid':account(name).pw_uid,'gid':account(name).pw_gid} for role,name in [('anonymous',anonymous_user),('registered',registered_user)]}
-        front=account(frontend_user);public=json.loads(root_file(issuer_policy));egress=EgressPolicy.parse(policy)
+        front=account(frontend_user);public=json.loads(root_file(issuer_policy));egress=parse_runtime_policy(policy)
         namespace_inode=os.stat(namespace or '/proc/self/ns/net').st_ino
         c={'version':'codi-guest-managed/1','instance':instance,'unitDir':unit_dir,'workerRelease':str(path(str(worker))),'workerSHA256':worker_sha256,'operatorRelease':str(self.operator),'operatorSHA256':operator_sha,'python':str(path(str(python))),'stateRoot':str(path(str(state_root))),'frontendUser':frontend_user,'frontendUID':front.pw_uid,'frontendUnit':None if namespace else 'codi-'+instance.removeprefix('codi-net-')+'-guest.service','pingGID':1001,'roles':root_roles,'origin':public['issuer'],'basePath':base_path,'issuerPolicy':public,'policy':egress.value(),'policySHA256':egress.sha256,'namespacePath':namespace,'namespaceInode':namespace_inode,'kernelSHA256':'','qemuSHA256':sha(root_file('/usr/bin/qemu-system-i386',mode=0o755,maximum=67108864)),'secretSHA256':{}}
         WireAuthorization(public,egress.sha256,base_path=base_path)
@@ -297,7 +297,7 @@ class Manager:
         policy_dir.chmod(0o755);protected(policy_dir,0,0o755,directory=True)
         for role in ROLES:
             Permissions(permission_path).defaults(role);atomic(self.folder/(role+'.json'),encoded(self.worker_settings(c,role)),0o644)
-        resolver=''.join('nameserver '+ip+'\n' for ip in EgressPolicy.parse(c['policy']).dns_ipv4).encode();atomic(self.folder/'resolv.conf',resolver,0o644)
+        resolver=''.join('nameserver '+ip+'\n' for ip in parse_runtime_policy(c['policy']).dns_ipv4).encode();atomic(self.folder/'resolv.conf',resolver,0o644)
         self.validate(c);phase('inputs')
         for name,raw in self.rendered(c).items():
             file=Path(c['unitDir'])/name

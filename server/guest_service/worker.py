@@ -16,6 +16,7 @@ import struct
 import time
 from aiohttp import web,WSMsgType
 from .authorization import NetworkDenied,WireAuthorization
+from .egress import OwnerEgressPolicy
 from webos_accounts import jose
 from .frames import permitted
 
@@ -74,8 +75,18 @@ class WireWorker:
         if self.active>=4 or len(self.starts)>=20 or self.shared_bytes>=268435456:raise web.HTTPServiceUnavailable()
         self.starts.append(now);self.active+=1;parent=None;process=None;tasks=[];writer=None
         ws=web.WebSocketResponse(max_msg_size=16384,compress=False,heartbeat=30)
+        close_code = 1000
         state=WireAuthorization(self.issuer_policy,self.policy.sha256,base_path=self.base_path,clock=self.clock)
         budget=Budget(self.limits);bound=None;usage_wire=None
+        def scope(principal):
+            if isinstance(self.policy, OwnerEgressPolicy):
+                return self.policy.scope(principal.subject, int(self.clock()))
+            return 'registered'
+        def authorized():
+            principal = state.principal
+            if principal is None or principal.kind != 'registered':
+                return None
+            return scope(principal)
         def charge(size):
             budget.charge(size);self.shared_bytes+=size
             if self.shared_bytes>268435456:raise NetworkDenied('Worker shared traffic allowance reached')
@@ -88,7 +99,8 @@ class WireWorker:
             charge(len(message.data.encode('utf-8')));value=jose.loads(message.data)
             if not isinstance(value,dict) or set(value)!={'type','grant','proof'} or value['type']!='codi-guest-network-auth/1':raise NetworkDenied('Exact wire authorization message required')
             principal=state.accept(value['grant'],value['proof'])
-            if principal.kind!='registered':raise NetworkDenied('Registered worker requires registered identity')
+            if principal.kind != 'registered' or scope(principal) is None:
+                raise NetworkDenied('Guest network is unavailable to this account')
             binding=(principal.subject,principal.sid,jose.thumbprint(principal.key))
             if bound is not None and binding!=bound:raise NetworkDenied('A worker wire cannot change account or key')
             if self.usage is not None:
@@ -99,14 +111,16 @@ class WireWorker:
             text=jose.dumps(value);charge(len(text.encode()));await asyncio.wait_for(ws.send_str(text),5)
         async def accepted():
             principal=state.principal
-            if principal is None:raise NetworkDenied('Registered wire grant expired')
-            await send({'type':'codi-guest-network-ready/1','kind':'registered','expires_at':principal.deadline,'connection_id':state.connection_id,'policy_sha256':self.policy.sha256})
+            capability = authorized()
+            if principal is None or capability is None:raise NetworkDenied('Registered wire grant expired')
+            deadline = min(principal.deadline, self.policy.test_end) if capability == 'test' else principal.deadline
+            await send({'type':'codi-guest-network-ready/1','kind':'registered','expires_at':deadline,'connection_id':state.connection_id,'policy_sha256':self.policy.sha256})
         try:
             await ws.prepare(request)
             if self.role=='registered':
                 await send(state.challenge());bound=accept(await asyncio.wait_for(ws.receive(),10));await accepted()
             elif self.usage is not None:usage_wire=self.usage.reserve('@anonymous',self.usage.clock()+30)
-            if self.role=='registered' and not state.registered:raise NetworkDenied('Grant expired before backend admission')
+            if self.role=='registered' and authorized() is None:raise NetworkDenied('Grant expired before backend admission')
             parent,child=socket.socketpair();parent.setblocking(False)
             command=['/usr/bin/qemu-system-i386','-machine','none','-nodefaults','-no-user-config','-display','none','-monitor','none','-serial','none','-m','16M',
                      '-netdev','user,id=wan,ipv6=off,net=10.86.0.0/24,host=10.86.0.1,dhcpstart=10.86.0.2,dns=10.86.0.3',
@@ -114,16 +128,17 @@ class WireWorker:
             try:process=await asyncio.create_subprocess_exec(*command,pass_fds=(child.fileno(),),stdout=asyncio.subprocess.DEVNULL,stderr=asyncio.subprocess.DEVNULL,preexec_fn=child_limits)
             finally:child.close()
             self.processes.add(process.pid)
-            if self.role=='registered' and not state.registered:raise NetworkDenied('Grant expired during backend startup')
+            if self.role=='registered' and authorized() is None:raise NetworkDenied('Grant expired during backend startup')
             reader,writer=await asyncio.open_connection(sock=parent);parent=None
             async def ingress():
                 async for message in ws:
-                    if self.role=='registered' and not state.registered:raise NetworkDenied('Registered wire grant expired')
+                    capability = authorized()
+                    if self.role=='registered' and capability is None:raise NetworkDenied('Registered wire grant expired')
                     if message.type==WSMsgType.TEXT and self.role=='registered':accept(message);await accepted();continue
                     if message.type!=WSMsgType.BINARY:raise NetworkDenied('Binary Ethernet required')
                     frame=message.data;charge(len(frame))
                     if len(frame)>1518:raise NetworkDenied('Oversized Ethernet frame')
-                    if not permitted(frame,self.policy,registered=self.role=='registered'):
+                    if not permitted(frame,self.policy,registered=self.role=='registered',scope=capability):
                         self.blocked+=1;continue
                     writer.write(struct.pack('!I',len(frame))+frame);await asyncio.wait_for(writer.drain(),5);self.forwarded+=1
             async def egress():
@@ -131,13 +146,13 @@ class WireWorker:
                     size=struct.unpack('!I',await reader.readexactly(4))[0]
                     if not 14<=size<=1518:raise NetworkDenied('Invalid backend Ethernet frame')
                     frame=await reader.readexactly(size)
-                    if self.role=='registered' and not state.registered:raise NetworkDenied('Registered reply grant expired')
+                    if self.role=='registered' and authorized() is None:raise NetworkDenied('Registered reply grant expired')
                     charge(size);await asyncio.wait_for(ws.send_bytes(frame),5)
             async def lease():
                 last=time.monotonic()
                 while True:
                     await asyncio.sleep(self.lease_poll)
-                    if not state.registered:raise NetworkDenied('Registered wire grant expired')
+                    if authorized() is None:raise NetworkDenied('Registered wire grant expired')
                     if time.monotonic()-last>=self.refresh_after and state.pending is None:await send(state.challenge());last=time.monotonic()
             async def accounting_lease():
                 while True:
@@ -151,17 +166,14 @@ class WireWorker:
             if self.usage is not None:tasks.append(asyncio.create_task(accounting_lease()))
             await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
         except (ValueError,TimeoutError,ConnectionError,asyncio.IncompleteReadError):
-            if ws.prepared:await ws.close(code=1008,message=b'Guest wire authorization or allowance ended')
+            if ws.prepared:close_code = 1008
             else:raise
         finally:
             state.close()
             for task in tasks:task.cancel()
             if tasks:await asyncio.gather(*tasks,return_exceptions=True)
-            if ws.prepared:await ws.close()
             if writer is not None:
                 writer.close()
-                try:await writer.wait_closed()
-                except (ConnectionError,OSError):pass
             if parent is not None:parent.close()
             if process is not None:
                 if process.returncode is None:
@@ -169,8 +181,14 @@ class WireWorker:
                     try:await asyncio.wait_for(process.wait(),3)
                     except asyncio.TimeoutError:process.kill();await process.wait()
                 self.processes.discard(process.pid)
+            if writer is not None:
+                try:await writer.wait_closed()
+                except (ConnectionError,OSError):pass
             if usage_wire is not None:
                 try:self.usage.release(usage_wire)
                 except (ValueError,OSError):pass # Expiring reservation survives a storage outage.
             self.active-=1
+            if ws.prepared:
+                reason = b'Guest wire authorization or allowance ended' if close_code == 1008 else b''
+                await ws.close(code=close_code, message=reason)
         return ws

@@ -7,7 +7,7 @@ import re
 import stat
 
 from .authorization import context,policy_hash,WireAuthorization
-from .egress import EgressPolicy
+from .egress import parse_runtime_policy
 
 VERSION='codi-guest-frontend/1'
 def metadata(base,policy_sha256):
@@ -18,7 +18,7 @@ def validate(value):
     fields={'version','origin','basePath','policy','policySHA256','issuerPolicy','frontendUID','frontendGID','workerSockets','guardUnit'}
     if not isinstance(value,dict) or set(value)!=fields or value['version']!=VERSION:raise ValueError('Exact guest frontend descriptor required')
     context(value['origin'],value['basePath'])
-    policy=EgressPolicy.parse(value['policy'])
+    policy=parse_runtime_policy(value['policy'])
     if policy.sha256!=value['policySHA256']:raise ValueError('Frontend egress policy pin changed')
     WireAuthorization(value['issuerPolicy'],policy.sha256,base_path=value['basePath'])
     issuer=value['issuerPolicy']

@@ -2,6 +2,7 @@
 from pathlib import Path
 from aiohttp import web
 from .coordinator import GuestCoordinator
+from .egress import OwnerEgressPolicy
 from .runtime import validate,metadata
 
 class ControlledFrontend:
@@ -20,7 +21,8 @@ class ControlledFrontend:
         if raw=='config.json':
             config=await self.legacy.configuration();expected=metadata(self.legacy.base_path,self.descriptor['policySHA256'])
             if config.get('identity')!=self.descriptor['issuerPolicy'] or config.get('guestNetwork')!=expected:raise web.HTTPBadGateway(text='Configured guest identity/policy unavailable')
-            config['guestNetwork']={**self.legacy.network_metadata(),**expected,'durableAccountLimits':True,'previewPolicy':{'version':'account-bound-preview/1',**self.policy.effective_value()}}
+            preview = self.policy.public_preview() if isinstance(self.policy, OwnerEgressPolicy) else self.policy.effective_value()
+            config['guestNetwork']={**self.legacy.network_metadata(),**expected,'durableAccountLimits':True,'previewPolicy':{'version':'account-bound-preview/1',**preview}}
             return web.json_response(config,headers={'Cache-Control':'no-store'})
         return await self.legacy.assets(request)
     async def relay(self,request):return await self.coordinator.relay(request)

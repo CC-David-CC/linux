@@ -12,7 +12,7 @@ import stat
 import subprocess
 
 from .authorization import context,policy_hash
-from .egress import EgressPolicy
+from .egress import parse_runtime_policy
 from .usage import protected
 
 WORKER_FILES=frozenset({*('guest_service/'+name+'.py' for name in ['__init__','authorization','egress','frames','worker','unix_transport','usage','installation']),
@@ -51,7 +51,7 @@ def settings(file,pin):
         if type(value[key]) is not int or not 1<=value[key]<=4294967294:raise ValueError('Explicit unprivileged worker identities required')
     if value['uid']==value['frontendUID']:raise ValueError('Separate frontend and worker UIDs required')
     context(value['origin'],value['basePath'])
-    policy=EgressPolicy.parse(value['policy'])
+    policy=parse_runtime_policy(value['policy'])
     if policy.sha256!=value['policySHA256']:raise ValueError('Effective worker egress policy pin changed')
     issuer=value['issuerPolicy']
     if not isinstance(issuer,dict) or set(issuer)!={'mode','apiBase','issuer','audience','authorityClass','authorityKeys'} or issuer['mode']!='server' or issuer['issuer']!=value['origin'] or issuer['apiBase']!=value['basePath']+'/api/v1' or issuer['authorityClass']!='development' or issuer['audience']!='codiserver-peers-v1':raise ValueError('Pinned public development issuer policy required')

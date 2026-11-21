@@ -1,12 +1,16 @@
 """Bounded Ethernet policy shared by anonymous and registered guest workers."""
 import ipaddress
 import socket
+from functools import partial
+
+from .egress import OwnerEgressPolicy
 
 GUEST=socket.inet_aton('10.86.0.2')
 GATEWAY=socket.inet_aton('10.86.0.1')
 DNS=socket.inet_aton('10.86.0.3')
 
-def permitted(frame,policy,*,registered=False):
+def permitted(frame,policy,*,registered=False,scope=None):
+    permits = partial(policy.permits, scope=scope) if isinstance(policy, OwnerEgressPolicy) else policy.permits
     if not isinstance(frame,bytes) or not 14<=len(frame)<=1518:return False
     kind=int.from_bytes(frame[12:14],'big')
     if kind==0x0806:
@@ -28,6 +32,6 @@ def permitted(frame,policy,*,registered=False):
         # Virtual DNS is still Internet access: consult the verified worker role
         # before allowing QEMU to proxy a query to the fixed public resolvers.
         return (frame[30:34]==DNS and int.from_bytes(payload[2:4],'big')==53
-                and policy.permits(policy.dns_ipv4[0],'udp',53,registered=registered,dns_proxy=True))
+                and permits(policy.dns_ipv4[0],'udp',53,registered=registered,dns_proxy=True))
     else:return False
-    return policy.permits(destination,name,port,registered=registered)
+    return permits(destination,name,port,registered=registered)
