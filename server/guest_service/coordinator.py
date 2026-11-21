@@ -13,6 +13,7 @@ import secrets
 import time
 from aiohttp import ClientSession,ClientTimeout,UnixConnector,WSMsgType,web,ClientError
 from .authorization import NetworkDenied,context
+from .egress import OwnerEgressPolicy
 from .worker import Budget,Limits
 from webos_accounts import jose
 
@@ -83,9 +84,10 @@ class BrowserWire:
         old,candidate=self.current,self.candidate;self.current=self.candidate=None
         await self.stop(candidate);await self.stop(old)
         if self.closed:return
-        backend=await self.connect('anonymous')
-        if self.closed:await self.stop(backend);return
-        self.current=backend;backend.task=asyncio.create_task(self.pump(backend))
+        if not isinstance(self.owner.policy, OwnerEgressPolicy):
+            backend=await self.connect('anonymous')
+            if self.closed:await self.stop(backend);return
+            self.current=backend;backend.task=asyncio.create_task(self.pump(backend))
         if notify:await self.state('anonymous')
 
     def challenge(self,value):
