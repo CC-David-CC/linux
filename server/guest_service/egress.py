@@ -66,6 +66,20 @@ class EgressPolicy:
         if dns_proxy:return destination in self.dns_ipv4 and protocol in ('udp','tcp') and type(port) is int and port==53
         return protocol=='icmp-echo' and port is None or protocol=='tcp' and type(port) is int and port in (80,443)
 
+    def wire_rules(self, role):
+        rules = ['  ip daddr @private4 counter reject with icmpx type admin-prohibited']
+        if role == 'anonymous':
+            rules.append('  ip daddr @own4 counter reject with icmpx type admin-prohibited')
+        elif role != 'registered':
+            raise ValueError('Unknown worker role')
+        return rules + [
+            '  ip daddr @dns4 udp dport 53 counter accept',
+            '  ip daddr @dns4 tcp dport 53 counter accept',
+            '  ip protocol icmp icmp type echo-request icmp code 0 counter accept',
+            '  meta nfproto ipv4 tcp dport { 80, 443 } counter accept',
+            '  counter reject with icmpx type admin-prohibited',
+        ]
+
     def nftables(self,*,anonymous_uid,registered_uid,frontend_uid,anonymous_port=8141,registered_port=8142,frontend_port=8132,issuer_port=8118,unix_workers=False):
         if type(unix_workers) is not bool:raise ValueError('Explicit internal transport policy required')
         uids=[number(v,1,4294967294) for v in [anonymous_uid,registered_uid,frontend_uid]]
@@ -81,12 +95,8 @@ class EgressPolicy:
         # without letting their UID initiate arbitrary host-service connections.
         def reply(port):return f'  ip saddr 127.0.0.1 ip daddr 127.0.0.1 tcp sport {port} ct direction reply ct state established counter accept'
         for name,port in [('anonymous',anonymous_port),('registered',registered_port)]:
-            lines += [' chain '+name+' {',*([reply(port)] if not unix_workers else []),'  ip daddr @private4 counter reject with icmpx type admin-prohibited']
-            if name=='anonymous':lines+=['  ip daddr @own4 counter reject with icmpx type admin-prohibited']
-            lines += ['  ip daddr @dns4 udp dport 53 counter accept','  ip daddr @dns4 tcp dport 53 counter accept',
-                      '  ip protocol icmp icmp type echo-request icmp code 0 counter accept',
-                      '  meta nfproto ipv4 tcp dport { 80, 443 } counter accept',
-                      '  counter reject with icmpx type admin-prohibited',' }']
+            lines += [' chain '+name+' {', *([reply(port)] if not unix_workers else []),
+                      *self.wire_rules(name), ' }']
         control_ports=str(issuer_port) if unix_workers else ', '.join(map(str,[issuer_port,anonymous_port,registered_port]))
         lines += [' chain frontend {',reply(frontend_port),f'  ip daddr 127.0.0.1 tcp dport {{ {control_ports} }} counter accept',
                   '  counter reject with icmpx type admin-prohibited',' }','}']
@@ -175,29 +185,29 @@ class OwnerEgressPolicy(EgressPolicy):
             return True
         return scope == 'owner' and super().permits(destination, protocol, port, registered=True, dns_proxy=dns_proxy)
 
-    def nftables(self, **kwargs):
-        generated = super().nftables(**kwargs)
-        prefix, marker, tail = generated.partition(' chain anonymous {\n')
-        body, end, rest = tail.partition('\n }\n')
-        if not marker or not end or not rest.startswith(' chain registered {\n'):
-            raise ValueError('Unexpected guest firewall layout')
-        replies = [line for line in body.splitlines() if 'ct direction reply ct state established counter accept' in line]
-        if len(replies) != (0 if kwargs.get('unix_workers', False) else 1):
-            raise ValueError('Unexpected anonymous loopback rules')
-        reject = '  counter reject with icmpx type admin-prohibited'
-        private = '  ip daddr @private4 counter reject with icmpx type admin-prohibited'
+    def wire_rules(self, role):
+        deny = '  counter reject with icmpx type admin-prohibited'
+        if role == 'anonymous':
+            return [deny]
+        if role != 'registered':
+            raise ValueError('Unknown worker role')
         ssh = f'  ip daddr {self.ssh_host} tcp dport 22 counter accept'
-        if rest.count(private) != 1:
-            raise ValueError('Unexpected registered LAN filter')
-        if self.owner is None:
-            registered, close, frontend = rest.partition('\n }\n chain frontend {\n')
-            if not close:
-                raise ValueError('Unexpected registered firewall layout')
-            control = [line for line in registered.splitlines() if 'ct direction reply ct state established counter accept' in line]
-            rest = '\n'.join([' chain registered {', *control, ssh, reject]) + close + frontend
-        else:
-            rest = rest.replace(private, ssh + '\n' + private, 1)
-        return prefix + marker + '\n'.join([*replies, reject]) + end + rest
+        return [ssh, *super().wire_rules(role)] if self.owner is not None else [ssh, deny]
+
+    def viewer_firewall(self, worker_uid):
+        """Host rules for the dedicated viewer worker. All other UIDs keep their own rules."""
+        number(worker_uid, 1, 4294967294)
+        lines = ['table inet webos_viewer_wire {',
+                 ' comment "WebOS account-scoped guest worker"']
+        if self.owner is not None:
+            lines.extend([
+                ' set private4 { type ipv4_addr; flags interval; elements = { ' + ', '.join(DENY_IPV4) + ' } }',
+                ' set dns4 { type ipv4_addr; elements = { ' + ', '.join(self.dns_ipv4) + ' } }',
+            ])
+        lines.extend([' chain output {', '  type filter hook output priority filter; policy accept;',
+                      f'  meta skuid {worker_uid} jump registered', ' }', ' chain registered {',
+                      *self.wire_rules('registered'), ' }', '}'])
+        return '\n'.join(lines) + '\n'
 
 
 def parse_runtime_policy(value):

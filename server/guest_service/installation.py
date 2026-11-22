@@ -68,7 +68,7 @@ def settings(file,pin):
     if kernel['namespacePath'] is not None and not re.fullmatch(r'/run/netns/codi-ng-fixture-[0-9a-f]{8}',kernel['namespacePath']):raise ValueError('Only the explicit disposable fixture namespace may replace the host namespace')
     return value
 
-def semantic_kernel(value):
+def semantic_kernel(value, table_name='codi_guest_egress'):
     # Handles and counters vary while rules are in use. Rule order, expression
     # values, UID/address/port sets and all other fields must match exactly.
     def clean(item):
@@ -82,7 +82,7 @@ def semantic_kernel(value):
         if set(entry)=={'metainfo'}:continue
         if len(entry)!=1 or next(iter(entry)) not in ('table','set','chain','rule'):raise ValueError('Unexpected kernel table object')
         selected.append(clean(entry))
-    if not selected or selected[0].get('table',{}).get('name')!='codi_guest_egress':raise ValueError('Scoped guest table witness required')
+    if not selected or selected[0].get('table',{}).get('name')!=table_name:raise ValueError('Scoped guest table witness required')
     return sha(json.dumps(selected,sort_keys=True,separators=(',',':')).encode())
 
 def kernel_witness(namespace=None):
