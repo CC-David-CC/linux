@@ -2,7 +2,7 @@
 
 This repository owns the existing Worker guest client/runtime, versioned guest runtime inputs, guest init/CDMUX sources, image builders and retained protocol fixture. The18 original files and their actual earlier paths retain exact blobs/modes and filtered history. This source component is meaningful guest/worker/image implementation, not an enabled desktop view.
 
-v86 engine/source/firmware live in the separate engines/v86 repository. The old Desktop's global boot/session orchestration remains preserved in its historical source reference; deliberate optional-view integration and lifecycle separation are pending. Terminal remains its independent apps/terminal source. Linux home is temporary guest memory, separate from server-backed account files. Linux/v86 is never a dependency of the minimum system.
+v86 engine/source/firmware live in the separate engines/v86 repository. The old Desktop's global boot/session orchestration remains preserved in its historical source reference; deliberate optional-view integration and lifecycle separation are pending. Terminal remains its independent apps/terminal source. The desktop can mount its file workspace as the Linux home through the browser-owned 9P device. Anonymous homes use temporary browser storage and signed-in homes use the account file service. Linux/v86 is never a dependency of the minimum system.
 
 The versioned image was inspected as static build data:974 archive entries, no populated guest/root homes or session/key payload found by the scoped inventory. It is a base image, not a copied live guest volume. Original guest build scripts are preserved references: they require a prepared isolated i386 toolchain and some use sudo/chroot. Do not run them against a live machine or the old workspace; build-interface/toolchain porting remains explicit work. The retained old browser test references its former shared driver and needs a new test harness. No production networking or service activation occurred.
 
@@ -33,7 +33,7 @@ The optional second argument includes Python and uv. The command verifies its
 input checksums and prepares a new ignored `.build/v86/` directory with the
 checksum manifest and an `image.json` entry for the rebuilt guest. The browser
 worker fixture uses that entry. The script also creates the ignored
-\`assets/terminal/v86\` link to the output so the worker can load its library.
+`assets/terminal/v86` link to the output so the worker can load its library.
 
 Build on a Linux host that can run i386 applications and supports rootless
 Bubblewrap namespaces. The builder runs the isolated Debian BusyBox and C
