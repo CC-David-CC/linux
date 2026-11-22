@@ -117,10 +117,12 @@ export function connectGuestNetwork(emulator, authority, {signal, onStatus = () 
         disconnect(wire, false, 'Guest networking is unavailable to this account.');
         return;
       }
-      const response = await fetch(cookie, {credentials: 'same-origin', mode: 'same-origin', cache: 'no-store',
-        redirect: 'error', signal: wire.abort.signal});
-      await response.body?.cancel();
-      if (!response.ok) throw Error('Guest connection could not be initialized.');
+      if (!authority.statusSetsRelayCookie) {
+        const response = await fetch(cookie, {credentials: 'same-origin', mode: 'same-origin', cache: 'no-store',
+          redirect: 'error', signal: wire.abort.signal});
+        await response.body?.cancel();
+        if (!response.ok) throw Error('Guest connection could not be initialized.');
+      }
       if (current !== wire) return;
       const socket = wire.socket = new WebSocket(relay);
       socket.binaryType = 'arraybuffer';

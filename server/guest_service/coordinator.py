@@ -28,17 +28,20 @@ class Backend:
 class GuestCoordinator:
     def __init__(self,origin,policy,endpoints,cookie_secret,*,base_path='',limits=None,clock=time.time):
         context(origin,base_path)
-        if set(endpoints)!={'anonymous','registered'}:raise ValueError('Exactly two fixed worker endpoints required')
+        if set(endpoints)!={'anonymous','registered'} and not (isinstance(policy,OwnerEgressPolicy) and set(endpoints)=={'registered'}):raise ValueError('Required fixed worker endpoints missing')
         for value in endpoints.values():
             if not isinstance(value,dict) or set(value)!={'socket','secret'} or not isinstance(value['socket'],str) or not re.fullmatch(r'/[A-Za-z0-9_./-]+',value['socket']) or '..' in Path(value['socket']).parts or not re.fullmatch('[A-Za-z0-9_-]{43,128}',value['secret']):raise ValueError('Fixed Unix endpoint and protected transport secret required')
-        if endpoints['anonymous']['socket']==endpoints['registered']['socket']:raise ValueError('Distinct Unix workers required')
+        if 'anonymous' in endpoints and endpoints['anonymous']['socket']==endpoints['registered']['socket']:raise ValueError('Distinct Unix workers required')
         if not isinstance(cookie_secret,str) or not re.fullmatch('[A-Za-z0-9_-]{43,128}',cookie_secret):raise ValueError('Protected browser connection cookie required')
         self.origin=origin;self.policy=policy;self.endpoints=endpoints;self.cookie=cookie_secret;self.base_path=base_path;self.limits=limits or Limits();self.clock=clock
         self.active=0;self.starts=[];self.shared_bytes=0
 
+    def accepts_cookie(self, value):
+        return secrets.compare_digest(value.encode(), self.cookie.encode())
+
     async def relay(self,request):
         cookie=request.cookies.get('codi_guest_relay','')
-        if request.query_string or len(request.headers.getall('Origin',[]))!=1 or request.headers.get('Origin')!=self.origin or not secrets.compare_digest(cookie.encode(),self.cookie.encode()):raise web.HTTPForbidden()
+        if request.query_string or len(request.headers.getall('Origin',[]))!=1 or request.headers.get('Origin')!=self.origin or not self.accepts_cookie(cookie):raise web.HTTPForbidden()
         now=time.monotonic();self.starts=[v for v in self.starts if v>now-60]
         if self.active>=4 or len(self.starts)>=20 or self.shared_bytes>=268435456:raise web.HTTPServiceUnavailable(headers={'Retry-After':'60'})
         self.starts.append(now);self.active+=1

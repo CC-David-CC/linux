@@ -1,6 +1,9 @@
 """Actual signed guest-wire verification; synthetic issuer, no network activation."""
 import asyncio
 import secrets
+import os
+import tempfile
+from pathlib import Path
 import socket
 import unittest
 from unittest.mock import AsyncMock, patch
@@ -12,6 +15,7 @@ from webos_accounts import jose
 from guest_service.authorization import GRANT_TYPE, PROOF_TYPE, NetworkDenied, WireAuthorization
 from guest_service.egress import EgressPolicy, OwnerEgressPolicy, parse_runtime_policy
 from guest_service.worker import WireWorker
+from guest_service.usage import Permissions, UsageLedger, initialize_permissions, initialize_usage, set_permission
 
 
 def signed(issuer, client, now, challenge, *, subject, kind, grant_type=GRANT_TYPE, proof_key=None):
@@ -190,6 +194,12 @@ class OwnerWireTest(unittest.IsolatedAsyncioTestCase):
                                 spawn.assert_awaited_once()
 
     async def test_expired_test_window_retires_the_existing_worker(self):
+        await self.check_existing_wire(revoke=False)
+
+    async def test_revoked_account_retires_an_idle_worker_before_expiry(self):
+        await self.check_existing_wire(revoke=True)
+
+    async def check_existing_wire(self, *, revoke):
         issuer = ec.generate_private_key(ec.SECP256R1())
         client_key = ec.generate_private_key(ec.SECP256R1())
         issuer_policy = {"mode": "server", "issuer": "https://webos.test",
@@ -198,8 +208,18 @@ class OwnerWireTest(unittest.IsolatedAsyncioTestCase):
         secret = secrets.token_urlsafe(32)
         retired = asyncio.Event()
         started = asyncio.Event()
+        usage = None
+        if revoke:
+            directory = Path(self.enterContext(tempfile.TemporaryDirectory(dir=Path.home())))
+            permissions = directory / 'permissions.sqlite'
+            uid = os.getuid()
+            initialize_permissions(permissions, owner_uid=uid)
+            set_permission(permissions, TEST, enabled=True, owner_uid=uid)
+            ledger = directory / 'usage.sqlite'
+            initialize_usage(ledger, 'registered')
+            usage = UsageLedger(ledger, 'registered', Permissions(permissions, owner_uid=uid), clock=lambda: now)
         worker = WireWorker("registered", "https://webos.test", owner_policy(), issuer_policy, secret,
-                            clock=lambda: now, lease_poll_seconds=.01)
+                            clock=lambda: now, lease_poll_seconds=.01, usage=usage)
 
         class TestProcess:
             pid = 1
@@ -231,7 +251,10 @@ class OwnerWireTest(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await wire.receive_json(timeout=3))["expires_at"], 1008)
                     await asyncio.wait_for(started.wait(), 3)
                     self.assertFalse(retired.is_set())
-                    now = 1008
+                    if revoke:
+                        set_permission(permissions, TEST, enabled=False, owner_uid=uid)
+                    else:
+                        now = 1008
                     await asyncio.wait_for(retired.wait(), 3)
                     self.assertEqual((await wire.receive(timeout=3)).type, WSMsgType.CLOSE)
 
