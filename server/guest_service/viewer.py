@@ -12,7 +12,7 @@ from webos_accounts.guest_authority import AUTHORIZE, CHALLENGE, STATUS, GuestAu
 from .authorization import NetworkDenied
 from .coordinator import GuestCoordinator
 from .egress import OwnerEgressPolicy
-from .installation import root_file
+from .installation import path as absolute_path, root_file
 from .runtime import metadata
 from .usage import Permissions
 
@@ -39,11 +39,11 @@ class ViewerWire(GuestCoordinator):
 
 
 class ViewerNetwork:
-    def __init__(self, origin, policy_path, secret, *, socket_path='/run/webos-guest-network/registered.sock'):
+    def __init__(self, origin, policy_path, secret):
         self.origin = origin
         self.path = Path(policy_path)
         self.permissions = Permissions(self.path.with_name('permissions.sqlite'))
-        self.endpoint = {'registered': {'socket': socket_path, 'secret': secret}}
+        self.secret = secret
         self.wire = None
 
     @classmethod
@@ -56,15 +56,20 @@ class ViewerNetwork:
             raise ValueError('Invalid installed guest wire credential')
         return cls(origin, policy_path, secret)
 
-    def policy(self):
+    def profile(self):
         try:
-            return OwnerEgressPolicy.parse(json.loads(root_file(self.path, maximum=8192)))
-        except (ValueError, OSError):
+            value = json.loads(root_file(self.path, maximum=8192))
+            if not isinstance(value, dict) or set(value) != {'workerSocket', 'policy'}:
+                return None
+            socket_path = absolute_path(value['workerSocket'])
+            return OwnerEgressPolicy.parse(value['policy']), str(socket_path)
+        except (ValueError, TypeError, OSError):
             return None
 
     def configure(self, config):
-        policy = self.policy()
-        if policy is not None:
+        profile = self.profile()
+        if profile is not None:
+            policy, _ = profile
             config['guestNetwork'] = {**metadata('', policy.sha256), 'previewPolicy': policy.public_preview(),
                                       'relayAdmission': 'signed-status-cookie'}
 
@@ -72,9 +77,11 @@ class ViewerNetwork:
         def dispatch(env, start):
             if env.get('PATH_INFO') not in (CHALLENGE, STATUS, AUTHORIZE):
                 return application(env, start)
-            policy = self.policy()
-            if policy is None:
+            profile = self.profile()
+            if profile is None:
                 return accounts.json_response(start, 403, {'error': 'Guest networking is unavailable'})
+            policy, _ = profile
+
             def allowed(subject, now):
                 scope = policy.scope(subject, now)
                 if scope is None:
@@ -90,11 +97,13 @@ class ViewerNetwork:
         return dispatch
 
     def current_wire(self):
-        policy = self.policy()
-        if policy is None:
+        profile = self.profile()
+        if profile is None:
             raise web.HTTPForbidden()
-        if self.wire is None or self.wire.policy != policy:
-            self.wire = ViewerWire(self.origin, policy, self.endpoint)
+        policy, socket_path = profile
+        endpoints = {'registered': {'socket': socket_path, 'secret': self.secret}}
+        if self.wire is None or self.wire.policy != policy or self.wire.endpoints != endpoints:
+            self.wire = ViewerWire(self.origin, policy, endpoints)
         return self.wire
 
     def account_response(self, request, response):
