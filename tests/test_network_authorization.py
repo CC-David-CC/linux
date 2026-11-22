@@ -125,6 +125,22 @@ class OwnerPolicyTest(unittest.TestCase):
         self.assertTrue(policy.permits("1.1.1.1", "udp", 53, registered=True, dns_proxy=True, scope="owner"))
         self.assertFalse(policy.permits("1.1.1.1", "udp", 53, registered=True, dns_proxy=True, scope="test"))
 
+    def test_scoped_rollout_has_no_owner_or_general_egress(self):
+        policy = parse_runtime_policy({**owner_policy().value(), "ownerSubject": None})
+        for other in (None, OWNER, UNRELATED):
+            self.assertIsNone(policy.scope(other, 1000))
+        self.assertEqual(policy.scope(TEST, 1000), "test")
+        self.assertIsNone(policy.scope(TEST, 1008))
+        self.assertEqual(policy.public_preview()["externalNetwork"], "scoped-test-only")
+        self.assertFalse(policy.permits("1.1.1.1", "tcp", 443, registered=True, scope="owner"))
+        for unix in (True, False):
+            rules = policy.nftables(anonymous_uid=6101, registered_uid=6102, frontend_uid=6103, unix_workers=unix)
+            registered = rules.split(" chain registered {\n", 1)[1].split("\n }", 1)[0].splitlines()
+            permits = [line.strip() for line in registered if "ct direction reply" not in line]
+            self.assertEqual(permits, [f"ip daddr {FIXTURE_SSH} tcp dport 22 counter accept",
+                                       "counter reject with icmpx type admin-prohibited"])
+            self.assertEqual(len(registered) - len(permits), int(not unix))
+
     def test_firewall_and_public_metadata_keep_the_same_boundary(self):
         policy = owner_policy()
         rules = policy.nftables(anonymous_uid=6101, registered_uid=6102, frontend_uid=6103, unix_workers=True)

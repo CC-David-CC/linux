@@ -106,7 +106,7 @@ def account_subject(value):
 class OwnerEgressPolicy(EgressPolicy):
     """Owner Internet access and one configured LAN SSH destination."""
 
-    owner: str
+    owner: str | None
     ssh_host: str
     test_subject: str | None = None
     test_start: int | None = None
@@ -114,7 +114,10 @@ class OwnerEgressPolicy(EgressPolicy):
 
     def __post_init__(self):
         super().__post_init__()
-        account_subject(self.owner)
+        if self.owner is not None:
+            account_subject(self.owner)
+        elif self.test_subject is None:
+            raise ValueError('A test-only policy requires a bounded test account')
         host = ipaddress.IPv4Address(self.ssh_host)
         if str(host) != self.ssh_host or not any(host in network for network in LAN_NETWORKS):
             raise ValueError('The SSH destination must be a fixed LAN IPv4 address')
@@ -154,10 +157,10 @@ class OwnerEgressPolicy(EgressPolicy):
         return {**super().value(), 'version': OWNER_POLICY_VERSION, 'ownerSubject': self.owner, 'sshHost': self.ssh_host, 'test': test}
 
     def public_preview(self):
-        return {'version': OWNER_POLICY_VERSION, 'externalNetwork': 'owner-only', 'anonymousInternet': 'deny'}
+        return {'version': OWNER_POLICY_VERSION, 'externalNetwork': 'owner-only' if self.owner else 'scoped-test-only', 'anonymousInternet': 'deny'}
 
     def scope(self, subject, now):
-        if subject == self.owner:
+        if self.owner is not None and subject == self.owner:
             return 'owner'
         if self.test_subject is not None and subject == self.test_subject and self.test_start <= now < self.test_end:
             return 'test'
@@ -166,7 +169,7 @@ class OwnerEgressPolicy(EgressPolicy):
     def permits(self, destination, protocol, port=None, *, registered=False, dns_proxy=False, scope=None):
         if type(registered) is not bool or type(dns_proxy) is not bool:
             raise ValueError('Trusted role and DNS-proxy decisions required')
-        if not registered or scope not in ('owner', 'test'):
+        if not registered or scope not in ('owner', 'test') or (scope == 'owner' and self.owner is None):
             return False
         if not dns_proxy and destination == self.ssh_host and protocol == 'tcp' and type(port) is int and port == 22:
             return True
@@ -186,7 +189,15 @@ class OwnerEgressPolicy(EgressPolicy):
         ssh = f'  ip daddr {self.ssh_host} tcp dport 22 counter accept'
         if rest.count(private) != 1:
             raise ValueError('Unexpected registered LAN filter')
-        return prefix + marker + '\n'.join([*replies, reject]) + end + rest.replace(private, ssh + '\n' + private, 1)
+        if self.owner is None:
+            registered, close, frontend = rest.partition('\n }\n chain frontend {\n')
+            if not close:
+                raise ValueError('Unexpected registered firewall layout')
+            control = [line for line in registered.splitlines() if 'ct direction reply ct state established counter accept' in line]
+            rest = '\n'.join([' chain registered {', *control, ssh, reject]) + close + frontend
+        else:
+            rest = rest.replace(private, ssh + '\n' + private, 1)
+        return prefix + marker + '\n'.join([*replies, reject]) + end + rest
 
 
 def parse_runtime_policy(value):
