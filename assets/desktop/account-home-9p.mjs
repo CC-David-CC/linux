@@ -403,6 +403,15 @@ export function createAccountHome9p(home) {
 
   return {
     request,
+    // Called after the guest CPU is paused, before copying its home.
+    flush() {
+      const next = tail.then(async () => {
+        requireThat(!closed, E.IO);
+        for (const handle of fids.values()) await commit(handle);
+      });
+      tail = next.catch(() => {});
+      return next;
+    },
     close() {
       closed = true;
       home.close();
