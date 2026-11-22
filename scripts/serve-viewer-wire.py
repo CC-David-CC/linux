@@ -58,7 +58,8 @@ def guard(*, install, monitor=False):
                  for row in listing['nftables'])
     if not exists and install:
         # Exclusive create and complete rules are one transaction.
-        command([NFT, '-f', '-'], input=b'create table inet webos_viewer_wire\n' + rules)
+        creation = b'create table inet webos_viewer_wire { comment "WebOS account-scoped guest worker"; }\n'
+        command([NFT, '-f', '-'], input=creation + rules)
     notify_socket = os.environ.get('NOTIFY_SOCKET') if monitor else None
     while True:
         actual = command([NFT, '-j', 'list', 'table', 'inet', TABLE])
