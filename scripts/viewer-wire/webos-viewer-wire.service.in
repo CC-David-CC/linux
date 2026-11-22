@@ -1,0 +1,28 @@
+[Unit]
+Description=Account-scoped WebOS guest network worker
+Requires=webos-viewer-wire.socket
+BindsTo=webos-viewer-wire-guard.service
+After=webos-viewer-wire-guard.service webos-viewer-wire.socket
+
+[Service]
+User=webos-guest-wire
+Group=webos-guest-wire
+ExecStart=@PYTHON@ -I -B @RELEASE@/serve-viewer-wire.py serve
+LoadCredential=webos-registered-wire:/etc/webos-guest-network/wire.key
+StateDirectory=webos-guest-network
+StateDirectoryMode=0700
+UMask=0077
+KillMode=control-group
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectHome=yes
+ProtectSystem=strict
+ProtectControlGroups=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+PrivateDevices=yes
+PrivateTmp=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET
+InaccessiblePaths=-/srv/data

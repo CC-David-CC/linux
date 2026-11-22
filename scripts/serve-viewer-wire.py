@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import socket
 import subprocess
 import sys
 import time
@@ -58,10 +59,16 @@ def guard(*, install, monitor=False):
     if not exists and install:
         # Exclusive create and complete rules are one transaction.
         command([NFT, '-f', '-'], input=b'create table inet webos_viewer_wire\n' + rules)
+    notify_socket = os.environ.get('NOTIFY_SOCKET') if monitor else None
     while True:
         actual = command([NFT, '-j', 'list', 'table', 'inet', TABLE])
         if semantic_kernel(json.loads(actual), TABLE) != witness:
             raise ValueError('Installed guest firewall differs from the verified policy')
+        if notify_socket:
+            address = '\0' + notify_socket[1:] if notify_socket.startswith('@') else notify_socket
+            with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as client:
+                client.sendto(b'READY=1', address)
+            notify_socket = None
         if not monitor:
             return
         time.sleep(1)

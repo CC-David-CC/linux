@@ -1,0 +1,14 @@
+[Unit]
+Description=Private socket for the WebOS guest network worker
+
+[Socket]
+ListenStream=/run/webos-guest-network/registered.sock
+SocketUser=@FRONTEND@
+SocketGroup=@FRONTEND_GROUP@
+SocketMode=0600
+DirectoryMode=0755
+FileDescriptorName=wire
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
